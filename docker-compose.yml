@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_FILE: /app/data/ahp.sqlite
+      SESSION_DB_FILE: sessions.sqlite
+      SESSION_DB_DIR: /app/data
+      SESSION_SECRET: ${SESSION_SECRET:-replace-me-with-secret}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+    volumes:
+      - ./:/app:cached
+      - ./data:/app/data
+      - /app/node_modules
+    restart: unless-stopped

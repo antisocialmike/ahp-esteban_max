@@ -16,9 +16,7 @@
 
     <!-- drag & drop upload area -->
     <div id="drop-zone" class="drop-zone">
-      <p>Drag &amp; drop a PDF here to upload</p>
-      <input type="file" id="fileInput" accept="application/pdf" hidden>
-      <button id="browseBtn">Or click to browse</button>
+      <p>Drag &amp; drop your CSV (PDF) here to upload</p>
     </div>
 
     <img src="logo.png" alt="AHP Logo" class="logo small-logo">
@@ -44,17 +42,24 @@
     </div>
   </div>
 
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p id="loadingText">Procesando CV...</p>
+    </div>
+  </div>
+
 
 <script>
 // drop zone behaviour
 const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('fileInput');
-const browseBtn = document.getElementById('browseBtn');
 const debugConnectionBtn = document.getElementById('debugConnectionBtn');
 const vacantesModal = document.getElementById('vacantesModal');
 const closeVacantesModalBtn = document.getElementById('closeVacantesModal');
 const vacantesListEl = document.getElementById('vacantesList');
 const vacantesSubtitleEl = document.getElementById('vacantesSubtitle');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const loadingText = document.getElementById('loadingText');
 
 ['dragenter','dragover','dragleave','drop'].forEach(eventName => {
   dropZone.addEventListener(eventName, preventDefaults, false);
@@ -74,18 +79,16 @@ function preventDefaults(e) {
 });
 
 dropZone.addEventListener('drop', handleDrop, false);
-browseBtn.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 closeVacantesModalBtn.addEventListener('click', closeVacantesModal);
 vacantesModal.addEventListener('click', (e) => {
   if (e.target === vacantesModal) closeVacantesModal();
 });
 debugConnectionBtn.addEventListener('click', async () => {
-  const mysqlConnected = await checkMySqlConnection();
-  if (mysqlConnected) {
-    alert('Conexión a MySQL: OK');
+  const dbConnected = await checkDbConnection();
+  if (dbConnected) {
+    alert('Conexión a SQLite: OK');
   } else {
-    alert('Conexión a MySQL: FALLÓ');
+    alert('Conexión a SQLite: FALLÓ');
   }
 });
 
@@ -95,14 +98,25 @@ function handleDrop(e) {
   handleFiles(files);
 }
 
-async function checkMySqlConnection() {
+function showLoading(message) {
+  loadingText.textContent = message || 'Procesando CV...';
+  loadingOverlay.classList.add('show');
+  loadingOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function hideLoading() {
+  loadingOverlay.classList.remove('show');
+  loadingOverlay.setAttribute('aria-hidden', 'true');
+}
+
+async function checkDbConnection() {
   try {
-    const res = await fetch('/api/health/mysql');
+    const res = await fetch('/api/health/db');
     if (!res.ok) return false;
     const data = await res.json();
-    return data.mysqlConnected === true;
+    return data.dbConnected === true;
   } catch (err) {
-    console.error('MySQL health check failed:', err);
+    console.error('DB health check failed:', err);
     return false;
   }
 }
@@ -115,9 +129,9 @@ async function handleFiles(files) {
     return;
   }
 
-  const mysqlConnected = await checkMySqlConnection();
-  if (!mysqlConnected) {
-    alert('No se puede subir el archivo porque no hay conexión real con MySQL.');
+  const dbConnected = await checkDbConnection();
+  if (!dbConnected) {
+    alert('No se puede subir el archivo porque no hay conexión real con la base de datos.');
     return;
   }
 
@@ -213,7 +227,7 @@ function renderVacantes(vacantes, candidatoId, areaEspecialidad) {
           } else {
             action.textContent = 'Postulado';
             action.classList.add('is-disabled');
-            status.textContent = 'Postulación registrada correctamente.';
+            status.textContent = 'Postulación registrada correctamente. Nos pondremos en contacto contigo a la brevedad.';
           }
         } catch (err) {
           action.disabled = false;
@@ -232,9 +246,10 @@ function renderVacantes(vacantes, candidatoId, areaEspecialidad) {
 }
 
 function uploadFile(file) {
+  showLoading('Analizando PDF, espera unos segundos...');
   const formData = new FormData();
   formData.append('pdf', file);
-  fetch('/upload', {
+  return fetch('/upload', {
     method: 'POST',
     body: formData
   }).then(async (res) => {
@@ -250,10 +265,7 @@ function uploadFile(file) {
       }
 
       const extracted = data.extracted || {};
-      const candidatoId = data.candidatoId;
-      if (!candidatoId) {
-        throw new Error('No se pudo identificar al candidato para postulación');
-      }
+      const candidatoId = Number(data.candidatoId) || 0;
 
       const recomendaciones = await fetchVacantesRecomendadas(candidatoId, extracted.area_especialidad || '');
       renderVacantes(recomendaciones.vacantes || [], candidatoId, recomendaciones.area || extracted.area_especialidad || '');
@@ -261,6 +273,8 @@ function uploadFile(file) {
     }).catch(err => {
       console.error(err);
       alert(err.message || 'Upload failed');
+    }).finally(() => {
+      hideLoading();
     });
 }
 </script>

@@ -35,7 +35,7 @@ body {
 /* drop/upload area */
 .drop-zone {
   position: absolute;
-  top: 200px; /* lower the drop zone a bit */
+  top: 150px; /* lower the drop zone a bit */
   left: 50%;
   transform: translateX(-50%);
   padding: 60px;
@@ -43,8 +43,8 @@ body {
   border-radius: 8px;
   text-align: center;
   width: 90%;
-  max-width: 500px;
-  min-height: 200px;
+  max-width: 400px;
+  min-height: 125px;
   background: #fafafa;
   transition: background 0.2s, border-color 0.2s;
   z-index: 5;
@@ -279,6 +279,13 @@ body{
     padding:40px;
 }
 
+.vacantes-container{
+  margin-top:28px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+  gap:18px;
+}
+
 .filter-box{
     background:#d6d6d6;
     padding:20px;
@@ -329,11 +336,61 @@ body{
 }
 
 .card{
-    background:#5f7ea4;
-    border-radius:15px;
-    padding:20px;
-    text-align:center;
-    color:white;
+  background:linear-gradient(165deg, #6b89af 0%, #547196 100%);
+  border-radius:16px;
+  padding:18px;
+  text-align:center;
+  color:white;
+  border:1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:0 10px 22px rgba(55, 79, 108, 0.28);
+  transition:transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 14px 28px rgba(45, 67, 92, 0.34);
+}
+
+.card h3{
+  font-size:28px;
+  line-height:1.25;
+  margin-bottom:8px;
+  color:#ffffff;
+}
+
+.card-meta{
+  font-size:14px;
+  color:#d8e3ef;
+  margin-bottom:14px;
+}
+
+.card-tag{
+  display:inline-block;
+  margin-bottom:12px;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  font-weight:700;
+  background:rgba(255, 255, 255, 0.2);
+  color:#f4f8fd;
+}
+
+.vacante-select-btn{
+  border:none;
+  border-radius:999px;
+  padding:9px 16px;
+  background:#f4f8fc;
+  color:#2f4c6f;
+  font-weight:700;
+  cursor:pointer;
+  transition:transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.vacante-select-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 14px rgba(0, 0, 0, 0.18);
 }
 
 .avatar{
@@ -534,6 +591,24 @@ body{
   width: 560px;
 }
 
+@media (max-width: 700px) {
+  .main {
+    padding: 20px;
+  }
+
+  .filter-box {
+    width: 100%;
+  }
+
+  .vacantes-container {
+    grid-template-columns: 1fr;
+  }
+
+  .card h3 {
+    font-size: 22px;
+  }
+}
+
 /* Vacancies recommendation modal on upload page */
 .vacantes-modal {
   position: fixed;
@@ -637,4 +712,50 @@ body{
   border-radius: 10px;
   padding: 14px;
   color: #4f5e55;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 29, 39, 0.45);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1400;
+  padding: 16px;
+}
+
+.loading-overlay.show {
+  display: flex;
+}
+
+.loading-box {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px 24px;
+  min-width: 240px;
+  text-align: center;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #d7e0eb;
+  border-top-color: #1e324b;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  animation: spin 0.9s linear infinite;
+}
+
+#loadingText {
+  color: #2b3f54;
+  font-size: 14px;
+  margin: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

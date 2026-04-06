@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
+const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const multer = require('multer');
 
@@ -18,6 +18,7 @@ const authRoutes = require('./routes/auth');
 const vacantesRoutes = require('./routes/vacantes');
 const postulacionesRoutes = require('./routes/postulaciones');
 const candidatosRoutes = require('./routes/candidatos');
+const { sendApplicationReceivedEmail } = require('./services/emailNotifications');
 
 const app = express();
 
@@ -38,7 +39,14 @@ app.use((req, res, next) => {
 });
 
 // session configuration
-const sessionStore = new MySQLStore({}, db.pool);
+const sessionDbDir = process.env.SESSION_DB_DIR || path.join(__dirname, 'data');
+const sessionDbFile = process.env.SESSION_DB_FILE || 'sessions.sqlite';
+const sessionStore = new SQLiteStore({
+  db: sessionDbFile,
+  dir: sessionDbDir,
+  concurrentDB: true,
+  table: 'sessions'
+});
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
@@ -143,6 +151,43 @@ async function upsertCandidateFromExtraction(extracted) {
   return insertResult.insertId;
 }
 
+async function getRecommendedVacancies(candidatoId, areaEspecialidad) {
+  let area = String(areaEspecialidad || '').trim();
+
+  if (!area && candidatoId > 0) {
+    const [candidateRows] = await db.pool.query(
+      'SELECT area_especialidad FROM candidato WHERE id = ?',
+      [candidatoId]
+    );
+    if (candidateRows.length) {
+      area = (candidateRows[0].area_especialidad || '').trim();
+    }
+  }
+
+  if (!area) {
+    return { area: '', vacantes: [] };
+  }
+
+  const [rows] = await db.pool.query(
+    `SELECT v.id, v.titulo, v.area, v.estatus, v.campus_id,
+            CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS yaPostulado
+     FROM vacante v
+     LEFT JOIN postulacion p ON p.vacante_id = v.id AND p.candidato_id = ?
+     WHERE v.estatus = 'OPEN'
+       AND LOWER(TRIM(v.area)) = LOWER(TRIM(?))
+     ORDER BY v.created_at DESC, v.id DESC`,
+    [candidatoId, area]
+  );
+
+  return {
+    area,
+    vacantes: rows.map((row) => ({
+      ...row,
+      yaPostulado: row.yaPostulado === 1
+    }))
+  };
+}
+
 app.post('/upload', upload.single('pdf'), async (req, res) => {
   if (!req.file || !req.file.buffer) {
     return res.status(400).json({ error: 'No file received' });
@@ -151,27 +196,42 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
   try {
     await db.pool.query('SELECT 1 AS ok');
   } catch (err) {
-    console.error('MySQL check failed on /upload:', err.message);
+    console.error('DB check failed on /upload:', err.message);
     return res.status(503).json({
-      error: 'MySQL is not reachable',
-      mysqlConnected: false
+      error: 'Database is not reachable',
+      dbConnected: false
     });
   }
 
   try {
     const n8nPayload = await forwardPdfToN8n(req.file);
     const extracted = n8nPayload.extracted || {};
+    const areaEspecialidad = String(extracted.area_especialidad || '').trim();
     console.log('[UPLOAD] JSON recibido desde n8n:', JSON.stringify(extracted));
-    const candidatoId = await upsertCandidateFromExtraction(extracted);
-    const storedInMySql = Boolean(candidatoId);
 
-    console.log('[UPLOAD] Resultado MySQL:', storedInMySql ? `OK (candidato_id=${candidatoId})` : 'Sin insercion por datos incompletos');
+    const recomendacionesPrevias = await getRecommendedVacancies(0, areaEspecialidad);
+    const openVacanciesCount = recomendacionesPrevias.vacantes.length;
+    const hasMatchingOpenVacancies = openVacanciesCount > 0;
+
+    let candidatoId = null;
+    let storedInDb = false;
+
+    if (hasMatchingOpenVacancies) {
+      candidatoId = await upsertCandidateFromExtraction(extracted);
+      storedInDb = Boolean(candidatoId);
+    } else {
+      console.log('[UPLOAD] No hay vacantes abiertas para el area detectada; no se guarda candidato.');
+    }
+
+    console.log('[UPLOAD] DB result:', storedInDb ? `OK (candidato_id=${candidatoId})` : 'Sin insercion por datos incompletos');
 
     res.json({
       ok: true,
-      mysqlConnected: true,
+      dbConnected: true,
       receivedFromN8n: true,
-      storedInMySql,
+      storedInDb,
+      hasMatchingOpenVacancies,
+      openVacanciesCount,
       extracted,
       candidatoId
     });
@@ -179,7 +239,7 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
     console.error('n8n processing failed on /upload:', err.message);
     res.status(502).json({
       ok: false,
-      mysqlConnected: true,
+      dbConnected: true,
       error: err.message || 'n8n processing failed'
     });
   }
@@ -192,13 +252,13 @@ app.use((err, req, res, next) => {
   return next(err);
 });
 
-app.get('/api/health/mysql', async (req, res) => {
+app.get('/api/health/db', async (req, res) => {
   try {
     await db.pool.query('SELECT 1 AS ok');
-    res.json({ mysqlConnected: true });
+    res.json({ dbConnected: true });
   } catch (err) {
-    console.error('MySQL healthcheck failed:', err.message);
-    res.status(503).json({ mysqlConnected: false, error: 'MySQL not reachable' });
+    console.error('DB healthcheck failed:', err.message);
+    res.status(503).json({ dbConnected: false, error: 'Database not reachable' });
   }
 });
 
@@ -206,40 +266,9 @@ app.get('/api/health/mysql', async (req, res) => {
 app.get('/api/public/vacantes/recomendadas', async (req, res) => {
   try {
     const candidatoId = Number(req.query.candidato_id) || 0;
-    let area = String(req.query.area_especialidad || '').trim();
-
-    if (!area && candidatoId > 0) {
-      const [candidateRows] = await db.pool.query(
-        'SELECT area_especialidad FROM candidato WHERE id = ?',
-        [candidatoId]
-      );
-      if (candidateRows.length) {
-        area = (candidateRows[0].area_especialidad || '').trim();
-      }
-    }
-
-    if (!area) {
-      return res.json({ vacantes: [], area: '' });
-    }
-
-    const [rows] = await db.pool.query(
-      `SELECT v.id, v.titulo, v.area, v.estatus, v.campus_id,
-              CASE WHEN p.id IS NULL THEN 0 ELSE 1 END AS yaPostulado
-       FROM vacante v
-       LEFT JOIN postulacion p ON p.vacante_id = v.id AND p.candidato_id = ?
-       WHERE v.estatus = 'OPEN'
-         AND LOWER(TRIM(v.area)) = LOWER(TRIM(?))
-       ORDER BY v.created_at DESC, v.id DESC`,
-      [candidatoId, area]
-    );
-
-    res.json({
-      area,
-      vacantes: rows.map((row) => ({
-        ...row,
-        yaPostulado: row.yaPostulado === 1
-      }))
-    });
+    const areaEspecialidad = String(req.query.area_especialidad || '').trim();
+    const recomendaciones = await getRecommendedVacancies(candidatoId, areaEspecialidad);
+    res.json(recomendaciones);
   } catch (err) {
     console.error('Error en recomendaciones publicas:', err.message);
     res.status(500).json({ error: 'DB error' });
@@ -257,7 +286,7 @@ app.post('/api/public/postulaciones', async (req, res) => {
     }
 
     const [candidateRows] = await db.pool.query(
-      'SELECT id, area_especialidad FROM candidato WHERE id = ?',
+      'SELECT id, nombre, correo, area_especialidad FROM candidato WHERE id = ?',
       [candidatoId]
     );
     if (!candidateRows.length) {
@@ -265,7 +294,7 @@ app.post('/api/public/postulaciones', async (req, res) => {
     }
 
     const [vacanteRows] = await db.pool.query(
-      'SELECT id, area, estatus FROM vacante WHERE id = ?',
+      'SELECT id, titulo, area, estatus FROM vacante WHERE id = ?',
       [vacanteId]
     );
     if (!vacanteRows.length) {
@@ -290,6 +319,13 @@ app.post('/api/public/postulaciones', async (req, res) => {
         'INSERT INTO postulacion (vacante_id, candidato_id) VALUES (?, ?)',
         [vacanteId, candidatoId]
       );
+
+      await sendApplicationReceivedEmail({
+        correo: candidate.correo,
+        nombre: candidate.nombre,
+        vacanteTitulo: vacante.titulo
+      });
+
       return res.json({ ok: true, alreadyApplied: false, postulacionId: insertResult.insertId });
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY') {

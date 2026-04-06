@@ -29,13 +29,25 @@ async function loadVacantes() {
 function renderVacantes(vacantes) {
   const container = document.getElementById('vacantes');
   container.innerHTML = '';
+
+  if (!Array.isArray(vacantes) || vacantes.length === 0) {
+    container.innerHTML = `
+      <div class="empty-candidates-state">
+        <h3>No hay vacantes para mostrar</h3>
+        <p>Prueba con otro término de búsqueda o crea una nueva vacante.</p>
+      </div>
+    `;
+    return;
+  }
+
   vacantes.forEach(v => {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
+      <span class="card-tag">Vacante</span>
       <h3>${v.titulo}</h3>
-      <p>${v.area || ''}</p>
-      <button onclick="selectVacante(${v.id})">Seleccionar</button>
+      <p class="card-meta">${v.area || 'Area sin especificar'}</p>
+      <button class="vacante-select-btn" onclick="selectVacante(${v.id})">Seleccionar</button>
     `;
     container.appendChild(card);
   });
@@ -271,6 +283,10 @@ async function openEntrevistasPendientes() {
         div.innerHTML = `
           <strong>${item.candidato_nombre}</strong> para <em>${item.vacante_titulo}</em>
           <div style="margin-top:6px;">Fecha: ${interviewDate}</div>
+          <div class="pending-actions" style="margin-top:8px;">
+            <button class="status-btn" onclick="acceptFromInterviewList(${item.id})">Aceptar</button>
+            <button class="status-btn" onclick="cancelInterviewFromList(${item.id})">Cancelar</button>
+          </div>
         `;
         container.appendChild(div);
       });
@@ -305,6 +321,42 @@ async function updateStatusFromList(id, status) {
     openPendientes();
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function acceptFromInterviewList(id) {
+  try {
+    const res = await fetch(`/api/postulaciones/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'ACEPTADO' })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'No se pudo aceptar la postulación');
+    }
+    openEntrevistasPendientes();
+  } catch (err) {
+    console.error(err);
+    showInfoModal('No fue posible aceptar', err.message || 'Intenta nuevamente.');
+  }
+}
+
+async function cancelInterviewFromList(id) {
+  try {
+    const res = await fetch(`/api/postulaciones/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'RECHAZADO' })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'No se pudo marcar como no contratado');
+    }
+    openEntrevistasPendientes();
+  } catch (err) {
+    console.error(err);
+    showInfoModal('No fue posible actualizar', err.message || 'Intenta nuevamente.');
   }
 }
 
