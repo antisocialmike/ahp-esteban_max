@@ -57,8 +57,21 @@ app.use(
   })
 );
 
-// static files
-app.use(express.static(path.join(__dirname, 'public')));
+// static files with explicit UTF-8 charset for text assets
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, filePath) => {
+      const ext = path.extname(filePath).toLowerCase();
+      if (ext === '.html') {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      } else if (ext === '.css') {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      } else if (ext === '.js') {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      }
+    }
+  })
+);
 
 // Upload in memory only; nothing is written to disk.
 const upload = multer({

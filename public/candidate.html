@@ -1,75 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Apply - AHP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AHP — Postulación</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-  <div class="login-container" style="max-width:500px;margin:auto;">
-    <h2>Enviar CV / Registrarse como candidato</h2>
-    <form id="candidateForm">
-      <div class="input-group">
-        <input id="c_nombre" type="text" placeholder="Nombre completo" required>
-      </div>
-      <div class="input-group">
-        <input id="c_correo" type="email" placeholder="Correo" required>
-      </div>
-      <div class="input-group">
-        <input id="c_telefono" type="text" placeholder="Teléfono">
-      </div>
-      <div class="input-group">
-        <input id="c_area" type="text" placeholder="Área / Especialidad">
-      </div>
-      <div class="input-group">
-        <input id="c_experiencia" type="number" placeholder="Años de experiencia">
-      </div>
-      <div class="input-group">
-        <input id="c_vacante" type="number" placeholder="ID de vacante (opcional)">
-      </div>
-      <div class="input-group">
-        <label>Foto / CV (opcional)</label>
-        <input id="c_photo" type="file" accept="image/*,application/pdf">
-      </div>
-      <button type="button" class="submit-btn" onclick="submitCandidate()">Enviar</button>
-    </form>
-    <p id="feedback" class="success-message"></p>
+  <div class="candidate-page">
+    <div class="candidate-card-wrap">
+
+      <img src="logo.png" alt="AHP Logo" class="cc-logo">
+
+      <h2>Enviar postulación</h2>
+      <p class="cc-sub">Completa tu información para postularte a una vacante académica</p>
+
+      <p id="feedback" class="success-message"></p>
+
+      <form id="candidateForm" onsubmit="event.preventDefault(); submitCandidate();">
+
+        <div class="input-group">
+          <i data-lucide="user" class="input-icon"></i>
+          <input id="c_nombre" type="text" placeholder="Nombre completo" required>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input id="c_correo" type="email" placeholder="Correo electrónico" required>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="phone" class="input-icon"></i>
+          <input id="c_telefono" type="tel" placeholder="Teléfono">
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="briefcase" class="input-icon"></i>
+          <input id="c_area" type="text" placeholder="Área / Especialidad">
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="award" class="input-icon"></i>
+          <input id="c_experiencia" type="number" min="0" placeholder="Años de experiencia">
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="hash" class="input-icon"></i>
+          <input id="c_vacante" type="number" placeholder="ID de vacante (opcional)">
+        </div>
+
+        <label class="file-label">
+          <i data-lucide="paperclip" style="width:16px;height:16px;flex-shrink:0;"></i>
+          <span id="fileLabel">Adjuntar foto o CV (opcional)</span>
+          <input id="c_photo" type="file" accept="image/*,application/pdf" onchange="updateFileLabel(this)">
+        </label>
+
+        <button type="submit" class="submit-btn" style="margin-top:20px;">
+          Enviar postulación
+        </button>
+
+      </form>
+
+    </div>
   </div>
 
-<script>
-async function submitCandidate() {
-  const form = document.getElementById('candidateForm');
-  const data = new FormData();
-  data.append('nombre', document.getElementById('c_nombre').value);
-  data.append('correo', document.getElementById('c_correo').value);
-  data.append('telefono', document.getElementById('c_telefono').value);
-  data.append('area_especialidad', document.getElementById('c_area').value);
-  data.append('experiencia_anos', document.getElementById('c_experiencia').value);
-  const vac = document.getElementById('c_vacante').value;
-  if (vac) data.append('vacante_id', vac);
-  const photo = document.getElementById('c_photo').files[0];
-  if (photo) data.append('photo', photo);
-
-  try {
-    const res = await fetch('/api/candidatos', {
-      method: 'POST',
-      body: data
-    });
-    const json = await res.json();
-    if (res.ok) {
-      document.getElementById('feedback').innerText = 'Registro enviado correctamente';
-      document.getElementById('feedback').style.display = 'block';
-      form.reset();
-    } else {
-      alert(json.error || 'Error');
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Problema de red');
+  <script>lucide.createIcons();</script>
+  <script>
+  function updateFileLabel(input) {
+    const label = document.getElementById('fileLabel');
+    label.textContent = input.files[0] ? input.files[0].name : 'Adjuntar foto o CV (opcional)';
   }
-}
-</script>
 
+  async function submitCandidate() {
+    const data = new FormData();
+    data.append('nombre',            document.getElementById('c_nombre').value);
+    data.append('correo',            document.getElementById('c_correo').value);
+    data.append('telefono',          document.getElementById('c_telefono').value);
+    data.append('area_especialidad', document.getElementById('c_area').value);
+    data.append('experiencia_anos',  document.getElementById('c_experiencia').value);
+    const vac = document.getElementById('c_vacante').value;
+    if (vac) data.append('vacante_id', vac);
+    const photo = document.getElementById('c_photo').files[0];
+    if (photo) data.append('photo', photo);
+
+    try {
+      const res  = await fetch('/api/candidatos', { method: 'POST', body: data });
+      const json = await res.json();
+      if (res.ok) {
+        const fb = document.getElementById('feedback');
+        fb.textContent = 'Postulación enviada correctamente. ¡Gracias por tu interés!';
+        fb.style.display = 'block';
+        document.getElementById('candidateForm').reset();
+        document.getElementById('fileLabel').textContent = 'Adjuntar foto o CV (opcional)';
+      } else {
+        alert(json.error || 'Error al enviar');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Problema de red');
+    }
+  }
+  </script>
 </body>
 </html>

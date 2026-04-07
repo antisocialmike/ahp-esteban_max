@@ -1,81 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <meta charset="UTF-8">
-  <title>AHP - Sign In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AHP — Iniciar sesión</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
   <div class="login-container">
 
+    <!-- LEFT: Form panel -->
     <div class="left-panel">
 
-      <img src="logo.png" class="logo">
+      <img src="logo.png" alt="AHP Logo" class="auth-logo">
 
-      <h2>Sign in</h2>
+      <h2 class="auth-heading">Bienvenido de vuelta</h2>
+      <p class="auth-sub">Ingresa tus credenciales para continuar</p>
 
-<div class="input-group">
-  <i data-lucide="mail" class="input-icon"></i>
-  <input id="email" type="email" placeholder="e-mail">
-</div>
-<div class="input-group">
-  <i data-lucide="lock" class="input-icon"></i>
-  <input id="password" type="password" placeholder="password">
-</div>
-        <button type="button" class="submit-btn" onclick="login()">
-  Sign in
-</button>
+      <div class="input-group">
+        <i data-lucide="mail" class="input-icon"></i>
+        <input id="email" type="email" placeholder="Correo electrónico" autocomplete="email">
+      </div>
 
-      <p class="small-text">
-        Don't have an account?
-      </p>
+      <div class="input-group">
+        <i data-lucide="lock" class="input-icon"></i>
+        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
+      </div>
 
-      <p class="create-account" onclick="location.href='create-account.html'">
-        Create account
+      <button type="button" class="submit-btn" onclick="login()">
+        Iniciar sesión
+      </button>
+
+      <p class="small-text" style="margin-top:20px;">
+        ¿No tienes cuenta?
+        <span class="create-account" onclick="location.href='create-account.html'">Crear cuenta</span>
       </p>
 
       <p class="back-link" onclick="location.href='index.html'">
-        Back to home
+        ← Volver al inicio
       </p>
 
     </div>
 
+    <!-- RIGHT: Branding panel -->
     <div class="right-panel">
-      <div class="maps-card">MAPS</div>
-      <div class="tag">El nuevo</div>
-      <div class="tag">modelo educativo</div>
-      <div class="tag arrow">para ti →</div>
+      <p class="rp-title">La plataforma de reclutamiento académico más inteligente</p>
+      <p class="rp-sub">
+        Conectamos al talento educativo con las instituciones que buscan los mejores perfiles docentes.
+      </p>
+      <ul class="rp-features">
+        <li>
+          <span class="feat-icon"><i data-lucide="brain-circuit" style="width:18px;height:18px;color:#fff;"></i></span>
+          Análisis de CV con inteligencia artificial
+        </li>
+        <li>
+          <span class="feat-icon"><i data-lucide="briefcase" style="width:18px;height:18px;color:#fff;"></i></span>
+          Miles de vacantes académicas disponibles
+        </li>
+        <li>
+          <span class="feat-icon"><i data-lucide="bell" style="width:18px;height:18px;color:#fff;"></i></span>
+          Notificaciones automáticas de entrevistas
+        </li>
+      </ul>
     </div>
 
   </div>
-<script> lucide.createIcons()</script>
-<script>
-async function login() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  if (!email || !password) {
-    alert('Please enter email and password');
-    return;
-  }
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo: email, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      window.location.href = 'dashboard.html';
-    } else {
-      alert(data.error || 'Login failed');
+
+  <script>lucide.createIcons();</script>
+  <script>
+  async function login() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    if (!email || !password) {
+      alert('Por favor ingresa correo y contraseña');
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert('Network error');
+    try {
+      const res  = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ correo: email, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = 'dashboard.html';
+      } else {
+        alert(data.error || 'No se pudo iniciar sesión');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de red');
+    }
   }
-}
-</script>
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') login();
+  });
+  </script>
 </body>
 </html>

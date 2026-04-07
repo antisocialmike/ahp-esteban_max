@@ -1,47 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>AHP - Welcome</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AHP &mdash; Academic Hiring Platform</title>
   <link rel="stylesheet" href="styles.css">
-  <link href="https://tecmilenio.mx/sites/default/files/2020-09/Campus_NuevoLaredo_1.jpg" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-  <button id="debugConnectionBtn" class="secondary-btn" style="position:fixed;top:12px;right:12px;z-index:999;">
-    PROBAR CONEXION
+  <button id="debugConnectionBtn" class="secondary-btn" title="Test DB connection">
+    Test DB
   </button>
 
-  <div class="welcome-container">
+  <!-- ======== MAIN LAYOUT ======== -->
+  <div class="welcome-page">
 
-    <!-- drag & drop upload area -->
-    <div id="drop-zone" class="drop-zone">
-      <p>Drag &amp; drop your CSV (PDF) here to upload</p>
+    <!-- LEFT: Branding -->
+    <div class="welcome-brand">
+      <img src="logo.png" alt="AHP Logo" class="brand-logo">
+
+      <h1 class="brand-title">Academic<br>Hiring<br>Platform</h1>
+
+      <p class="brand-sub">
+        Conectamos el talento acad&eacute;mico con las oportunidades correctas, de forma inteligente y eficiente.
+      </p>
+
+      <div class="brand-badges">
+        <span class="brand-badge">Reclutamiento IA</span>
+        <span class="brand-badge">Postulaci&oacute;n digital</span>
+        <span class="brand-badge">Campus Tecmilenio</span>
+      </div>
     </div>
 
-    <img src="logo.png" alt="AHP Logo" class="logo small-logo">
+    <!-- RIGHT: Actions -->
+    <div class="welcome-action">
 
-    <h1>Welcome to AHP</h1>
+      <div style="text-align:center;">
+        <h2>Descubre vacantes para ti</h2>
+        <p style="margin-top:8px;">Sube tu CV en PDF y nuestro sistema detectar&aacute; autom&aacute;ticamente tu perfil y las mejores vacantes disponibles.</p>
+      </div>
 
-    <button class="primary-btn" onclick="location.href='login.html'">
-      I have an account
-    </button>
+      <!-- Drop zone -->
+      <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Zona de carga de CV">
+        <i data-lucide="upload-cloud" class="dz-icon"></i>
+        <p><strong>Arrastra tu CV aqu&iacute;</strong></p>
+        <p class="dz-sub">o haz clic para seleccionar un archivo PDF</p>
+      </div>
 
-    <button class="secondary-btn" onclick="location.href='create-account.html'">
-      Create account
-    </button>
+      <!-- CTA buttons -->
+      <div class="welcome-cta">
+        <button class="submit-btn" onclick="location.href='login.html'">
+          Iniciar sesi&oacute;n
+        </button>
+        <button class="secondary-btn btn-full" onclick="location.href='create-account.html'">
+          Crear cuenta
+        </button>
+      </div>
 
+    </div>
   </div>
 
+  <!-- ======== VACANTES MODAL ======== -->
   <div id="vacantesModal" class="vacantes-modal" aria-hidden="true">
     <div class="vacantes-modal-card">
-      <button id="closeVacantesModal" class="vacantes-close-btn" type="button">x</button>
+      <button id="closeVacantesModal" class="vacantes-close-btn" type="button" aria-label="Cerrar">&#215;</button>
       <h2>Vacantes disponibles para tu perfil</h2>
       <p id="vacantesSubtitle" class="vacantes-subtitle"></p>
       <div id="vacantesList" class="vacantes-list"></div>
     </div>
   </div>
 
+  <!-- ======== LOADING OVERLAY ======== -->
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-box">
       <div class="loading-spinner" aria-hidden="true"></div>
@@ -49,20 +79,20 @@
     </div>
   </div>
 
-
 <script>
-// drop zone behaviour
-const dropZone = document.getElementById('drop-zone');
-const debugConnectionBtn = document.getElementById('debugConnectionBtn');
-const vacantesModal = document.getElementById('vacantesModal');
-const closeVacantesModalBtn = document.getElementById('closeVacantesModal');
-const vacantesListEl = document.getElementById('vacantesList');
-const vacantesSubtitleEl = document.getElementById('vacantesSubtitle');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const loadingText = document.getElementById('loadingText');
+lucide.createIcons();
 
-['dragenter','dragover','dragleave','drop'].forEach(eventName => {
-  dropZone.addEventListener(eventName, preventDefaults, false);
+const dropZone           = document.getElementById('drop-zone');
+const debugConnectionBtn = document.getElementById('debugConnectionBtn');
+const vacantesModal      = document.getElementById('vacantesModal');
+const closeVacantesModalBtn = document.getElementById('closeVacantesModal');
+const vacantesListEl     = document.getElementById('vacantesList');
+const vacantesSubtitleEl = document.getElementById('vacantesSubtitle');
+const loadingOverlay     = document.getElementById('loadingOverlay');
+const loadingText        = document.getElementById('loadingText');
+
+['dragenter','dragover','dragleave','drop'].forEach(function(ev) {
+  dropZone.addEventListener(ev, preventDefaults, false);
 });
 
 function preventDefaults(e) {
@@ -70,32 +100,33 @@ function preventDefaults(e) {
   e.stopPropagation();
 }
 
-// visual feedback when dragging over
-['dragenter','dragover'].forEach(eventName => {
-  dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+['dragenter','dragover'].forEach(function(ev) {
+  dropZone.addEventListener(ev, function(){ dropZone.classList.add('dragover'); }, false);
 });
-['dragleave','drop'].forEach(eventName => {
-  dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+['dragleave','drop'].forEach(function(ev) {
+  dropZone.addEventListener(ev, function(){ dropZone.classList.remove('dragover'); }, false);
+});
+
+dropZone.addEventListener('click', function() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf';
+  input.addEventListener('change', function(){ handleFiles(input.files); });
+  input.click();
 });
 
 dropZone.addEventListener('drop', handleDrop, false);
 closeVacantesModalBtn.addEventListener('click', closeVacantesModal);
-vacantesModal.addEventListener('click', (e) => {
+vacantesModal.addEventListener('click', function(e) {
   if (e.target === vacantesModal) closeVacantesModal();
 });
-debugConnectionBtn.addEventListener('click', async () => {
-  const dbConnected = await checkDbConnection();
-  if (dbConnected) {
-    alert('Conexión a SQLite: OK');
-  } else {
-    alert('Conexión a SQLite: FALLÓ');
-  }
+debugConnectionBtn.addEventListener('click', async function() {
+  var dbConnected = await checkDbConnection();
+  alert(dbConnected ? 'Conexi\u00f3n a SQLite: OK' : 'Conexi\u00f3n a SQLite: FALL\u00d3');
 });
 
 function handleDrop(e) {
-  const dt = e.dataTransfer;
-  const files = dt.files;
-  handleFiles(files);
+  handleFiles(e.dataTransfer.files);
 }
 
 function showLoading(message) {
@@ -111,9 +142,9 @@ function hideLoading() {
 
 async function checkDbConnection() {
   try {
-    const res = await fetch('/api/health/db');
+    var res  = await fetch('/api/health/db');
     if (!res.ok) return false;
-    const data = await res.json();
+    var data = await res.json();
     return data.dbConnected === true;
   } catch (err) {
     console.error('DB health check failed:', err);
@@ -122,19 +153,17 @@ async function checkDbConnection() {
 }
 
 async function handleFiles(files) {
-  if (files.length === 0) return;
-  const file = files[0];
+  if (!files || files.length === 0) return;
+  var file = files[0];
   if (file.type !== 'application/pdf') {
-    alert('Only PDF files are allowed');
+    alert('Solo se permiten archivos PDF');
     return;
   }
-
-  const dbConnected = await checkDbConnection();
+  var dbConnected = await checkDbConnection();
   if (!dbConnected) {
-    alert('No se puede subir el archivo porque no hay conexión real con la base de datos.');
+    alert('No se puede subir el archivo porque no hay conexi\u00f3n con la base de datos.');
     return;
   }
-
   uploadFile(file);
 }
 
@@ -149,85 +178,80 @@ function closeVacantesModal() {
 }
 
 async function fetchVacantesRecomendadas(candidatoId, areaEspecialidad) {
-  const params = new URLSearchParams({
+  var params = new URLSearchParams({
     candidato_id: String(candidatoId || ''),
     area_especialidad: areaEspecialidad || ''
   });
-
-  const response = await fetch('/api/public/vacantes/recomendadas?' + params.toString());
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'No se pudieron obtener vacantes recomendadas');
-  }
+  var response = await fetch('/api/public/vacantes/recomendadas?' + params.toString());
+  var data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudieron obtener vacantes recomendadas');
   return data;
 }
 
 async function postularCandidato(candidatoId, vacanteId) {
-  const response = await fetch('/api/public/postulaciones', {
+  var response = await fetch('/api/public/postulaciones', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ candidato_id: candidatoId, vacante_id: vacanteId })
   });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'No se pudo crear la postulación');
-  }
+  var data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'No se pudo crear la postulaci\u00f3n');
   return data;
 }
 
 function renderVacantes(vacantes, candidatoId, areaEspecialidad) {
   vacantesSubtitleEl.textContent = areaEspecialidad
-    ? 'Area detectada: ' + areaEspecialidad
-    : 'No se detecto area de especialidad';
+    ? '\u00c1rea detectada: ' + areaEspecialidad
+    : 'No se detect\u00f3 \u00e1rea de especialidad';
   vacantesListEl.innerHTML = '';
 
   if (!vacantes.length) {
-    const empty = document.createElement('div');
+    var empty = document.createElement('div');
     empty.className = 'vacante-empty';
-    empty.textContent = 'No hay vacantes abiertas para esta area por el momento.';
+    empty.textContent = 'No hay vacantes abiertas para esta \u00e1rea por el momento.';
     vacantesListEl.appendChild(empty);
     return;
   }
 
-  vacantes.forEach((vacante) => {
-    const card = document.createElement('article');
+  vacantes.forEach(function(vacante) {
+    var card   = document.createElement('article');
     card.className = 'vacante-card';
 
-    const title = document.createElement('h3');
-    title.textContent = vacante.titulo || 'Vacante sin titulo';
+    var title  = document.createElement('h3');
+    title.textContent = vacante.titulo || 'Vacante sin t\u00edtulo';
 
-    const meta = document.createElement('p');
+    var meta   = document.createElement('p');
     meta.className = 'vacante-meta';
-    meta.textContent = 'Area: ' + (vacante.area || 'N/D');
+    meta.textContent = '\u00c1rea: ' + (vacante.area || 'N/D');
 
-    const action = document.createElement('button');
+    var action = document.createElement('button');
     action.className = 'vacante-apply-btn';
 
-    const status = document.createElement('p');
+    var status = document.createElement('p');
     status.className = 'vacante-status';
+    status.style.cssText = 'font-size:12px;margin-top:8px;color:var(--c-text-2);';
 
     if (vacante.yaPostulado) {
       action.textContent = 'Ya postulado';
       action.disabled = true;
       action.classList.add('is-disabled');
-      status.textContent = 'Ya existe una postulación para esta vacante.';
+      status.textContent = 'Ya existe una postulaci\u00f3n para esta vacante.';
     } else {
       action.textContent = 'Postularme';
-      action.addEventListener('click', async () => {
+      action.addEventListener('click', async function() {
         action.disabled = true;
         action.textContent = 'Postulando...';
         status.textContent = '';
         try {
-          const result = await postularCandidato(candidatoId, vacante.id);
+          var result = await postularCandidato(candidatoId, vacante.id);
           if (result.alreadyApplied) {
             action.textContent = 'Ya postulado';
             action.classList.add('is-disabled');
-            status.textContent = 'Ya existia una postulación para esta vacante.';
+            status.textContent = 'Ya exist\u00eda una postulaci\u00f3n para esta vacante.';
           } else {
-            action.textContent = 'Postulado';
+            action.textContent = '\u2713 Postulado';
             action.classList.add('is-disabled');
-            status.textContent = 'Postulación registrada correctamente. Nos pondremos en contacto contigo a la brevedad.';
+            status.textContent = 'Postulaci\u00f3n registrada. Nos pondremos en contacto pronto.';
           }
         } catch (err) {
           action.disabled = false;
@@ -247,35 +271,27 @@ function renderVacantes(vacantes, candidatoId, areaEspecialidad) {
 
 function uploadFile(file) {
   showLoading('Analizando PDF, espera unos segundos...');
-  const formData = new FormData();
+  var formData = new FormData();
   formData.append('pdf', file);
-  return fetch('/upload', {
-    method: 'POST',
-    body: formData
-  }).then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Upload failed');
-      }
+  return fetch('/upload', { method: 'POST', body: formData })
+    .then(async function(res) {
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
       return data;
     })
-    .then(async data => {
-      if (!data.ok) {
-        throw new Error(data.error || 'No se pudo procesar el CV');
-      }
-
-      const extracted = data.extracted || {};
-      const candidatoId = Number(data.candidatoId) || 0;
-
-      const recomendaciones = await fetchVacantesRecomendadas(candidatoId, extracted.area_especialidad || '');
+    .then(async function(data) {
+      if (!data.ok) throw new Error(data.error || 'No se pudo procesar el CV');
+      var extracted    = data.extracted || {};
+      var candidatoId  = Number(data.candidatoId) || 0;
+      var recomendaciones = await fetchVacantesRecomendadas(candidatoId, extracted.area_especialidad || '');
       renderVacantes(recomendaciones.vacantes || [], candidatoId, recomendaciones.area || extracted.area_especialidad || '');
       openVacantesModal();
-    }).catch(err => {
+    })
+    .catch(function(err) {
       console.error(err);
       alert(err.message || 'Upload failed');
-    }).finally(() => {
-      hideLoading();
-    });
+    })
+    .finally(function() { hideLoading(); });
 }
 </script>
 </body>

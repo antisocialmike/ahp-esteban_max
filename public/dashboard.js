@@ -97,8 +97,9 @@ function renderCandidatos(candidates) {
     card.className = 'card';
     card.innerHTML = `
       <div class="avatar"></div>
-      <h3>${c.nombre}</h3>
-      <button onclick="openCandidateModal(${c.postulacion_id})">Ver</button>
+      <h3 style="font-size:15px;text-align:center;">${c.nombre}</h3>
+      <p class="card-meta" style="justify-content:center;font-size:12px;">${c.area_especialidad || 'Sin área'}</p>
+      <button class="vacante-select-btn" onclick="openCandidateModal(${c.postulacion_id})">Ver perfil</button>
     `;
     container.appendChild(card);
   });

@@ -1,132 +1,132 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <meta charset="UTF-8">
-  <title>AHP - Create Account</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AHP &mdash; Crear cuenta</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+
   <div class="login-container">
 
+    <!-- LEFT: Form panel -->
     <div class="left-panel">
 
-      <img src="logo.png" class="logo">
+      <img src="logo.png" alt="AHP Logo" class="auth-logo">
 
-      <h2>Create account</h2>
+      <h2 class="auth-heading">Crear cuenta</h2>
+      <p class="auth-sub">Completa los datos para registrarte como reclutador</p>
 
-      <p class="back-link" onclick="location.href='login.html'">
-        ← Back to Sign in
+      <p class="back-link" onclick="location.href='login.html'" style="margin-bottom:20px;">
+        &larr; Volver al inicio de sesi&oacute;n
       </p>
 
-      <form class="login-form">
+      <form class="login-form" onsubmit="event.preventDefault(); register();">
 
-  <div class="input-group">
-    <i data-lucide="user" class="input-icon"></i>
-    <input id="name" type="text" placeholder="Name(s)">
-  </div>
+        <div class="input-group">
+          <i data-lucide="user" class="input-icon"></i>
+          <input id="name" type="text" placeholder="Nombre(s)" autocomplete="name" required>
+        </div>
 
-  <div class="row">
-    <div class="input-group small">
-      <input id="phone_code" type="text" placeholder="+52">
+        <div class="row">
+          <div class="input-group small">
+            <input id="phone_code" type="text" placeholder="+52" class="no-icon">
+          </div>
+          <div class="input-group">
+            <i data-lucide="phone" class="input-icon"></i>
+            <input id="phone" type="tel" placeholder="Tel&eacute;fono" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input id="email" type="email" placeholder="Correo electr&oacute;nico" autocomplete="email" required>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input id="password" type="password" placeholder="Contrase&ntilde;a" autocomplete="new-password" required>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="shield-check" class="input-icon"></i>
+          <input id="confirmPassword" type="password" placeholder="Confirmar contrase&ntilde;a" autocomplete="new-password" required>
+        </div>
+
+        <div class="input-group">
+          <i data-lucide="building-2" class="input-icon"></i>
+          <input id="campus" type="text" placeholder="Campus" autocomplete="organization">
+        </div>
+
+        <button type="submit" class="submit-btn">
+          Crear cuenta
+        </button>
+
+      </form>
+
     </div>
 
-    <div class="input-group">
-      <i data-lucide="phone" class="input-icon"></i>
-      <input id="phone" type="text" placeholder="Phone">
-    </div>
-  </div>
-
-  <div class="input-group">
-    <i data-lucide="mail" class="input-icon"></i>
-    <input id="email" type="email" placeholder="e-mail">
-  </div>
-
-  <div class="input-group">
-    <i data-lucide="lock" class="input-icon"></i>
-    <input id="password" type="password" placeholder="password">
-  </div>
-
-  <div class="input-group">
-    <i data-lucide="lock" class="input-icon"></i>
-    <input id="confirmPassword" type="password" placeholder="Confirm password">
-  </div>
-
-  <div class="input-group">
-    <i data-lucide="building-2" class="input-icon"></i>
-    <input id="campus" type="text" placeholder="Campus">
-  </div>
-
-<button type="button" class="submit-btn" onclick="register()">
-  Create Account
-</button>
-
-</form>
-    </div>
-
+    <!-- RIGHT: Branding panel -->
     <div class="right-panel">
-      <div class="maps-card">MAPS</div>
-      <div class="tag">El nuevo</div>
-      <div class="tag">modelo educativo</div>
-      <div class="tag arrow">para ti →</div>
+      <p class="rp-title">Gestiona el talento acad&eacute;mico desde un solo lugar</p>
+      <p class="rp-sub">
+        Publica vacantes, revisa candidatos y programa entrevistas de forma eficiente con la plataforma AHP.
+      </p>
+      <ul class="rp-features">
+        <li>
+          <span class="feat-icon"><i data-lucide="users" style="width:18px;height:18px;color:#fff;"></i></span>
+          Gesti&oacute;n centralizada de candidatos
+        </li>
+        <li>
+          <span class="feat-icon"><i data-lucide="calendar-check" style="width:18px;height:18px;color:#fff;"></i></span>
+          Programaci&oacute;n de entrevistas automatizada
+        </li>
+        <li>
+          <span class="feat-icon"><i data-lucide="file-text" style="width:18px;height:18px;color:#fff;"></i></span>
+          An&aacute;lisis de CVs con IA
+        </li>
+      </ul>
     </div>
 
   </div>
+
+  <script>lucide.createIcons();</script>
   <script>
-async function register() {
-  const nombre = document.getElementById('name').value;
-  const telefono = document.getElementById('phone').value;
-  const correo = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const confirm = document.getElementById('confirmPassword').value;
-  const campus = document.getElementById('campus').value;
-  if (!nombre || !correo || !password) {
-    alert('Name, email and password are required');
-    return;
-  }
-  if (password !== confirm) {
-    alert('Passwords do not match');
-    return;
-  }
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, correo, telefono, campus, password })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      window.location.href = 'dashboard.html';
-    } else {
-      alert(data.error || 'Registration failed');
+  async function register() {
+    const nombre   = document.getElementById('name').value.trim();
+    const telefono = document.getElementById('phone').value.trim();
+    const correo   = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirmPassword').value;
+    const campus   = document.getElementById('campus').value.trim();
+
+    if (!nombre || !correo || !password) {
+      alert('Nombre, correo y contrase\u00f1a son requeridos');
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    alert('Network error');
-  }
-}
-</script>
-<script> lucide.createIcons()</script>
-<script>
-
-function toggleMenu(){
-    document.getElementById("menu").classList.toggle("show");
-}
-
-/* Cerrar si haces click afuera */
-document.addEventListener("click", function(e){
-    const menu = document.getElementById("menu");
-    const icon = document.querySelector(".profile-icon");
-
-    if(!icon.contains(e.target) && !menu.contains(e.target)){
-        menu.classList.remove("show");
+    if (password !== confirm) {
+      alert('Las contrase\u00f1as no coinciden');
+      return;
     }
-});
-
-function logout(){
-    window.location.href = "login.html";
-}
-
-</script>
+    try {
+      const res  = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, correo, telefono, campus, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = 'dashboard.html';
+      } else {
+        alert(data.error || 'Error al registrar');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de red');
+    }
+  }
+  </script>
 </body>
 </html>
