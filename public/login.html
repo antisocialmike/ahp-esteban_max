@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AHP — Iniciar sesión</title>
+    <script>
+      (function(){var t=localStorage.getItem('ahp-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+    </script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="transitions.js"></script>
 </head>
 <body>
 
@@ -35,10 +39,10 @@
 
       <p class="small-text" style="margin-top:20px;">
         ¿No tienes cuenta?
-        <span class="create-account" onclick="location.href='create-account.html'">Crear cuenta</span>
+        <span class="create-account" onclick="ahpNavigate('create-account.html')">Crear cuenta</span>
       </p>
 
-      <p class="back-link" onclick="location.href='index.html'">
+      <p class="back-link" onclick="ahpNavigate('index.html')">
         ← Volver al inicio
       </p>
 
@@ -85,7 +89,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        window.location.href = 'dashboard.html';
+        ahpNavigate('dashboard.html');
       } else {
         alert(data.error || 'No se pudo iniciar sesión');
       }

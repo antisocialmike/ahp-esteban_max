@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AHP — Dashboard</title>
+    <script>
+      (function(){var t=localStorage.getItem('ahp-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+    </script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="transitions.js"></script>
 </head>
 <body class="dash-body">
 
@@ -19,6 +23,11 @@
   <div class="header-right">
     <span class="header-title">Panel de reclutamiento</span>
     <div class="profile">
+      <!-- Dark mode toggle -->
+      <button class="theme-toggle" id="themeToggleBtn" title="Cambiar tema" aria-label="Cambiar tema">
+        <i data-lucide="moon" style="width:16px;height:16px;" id="themeIcon"></i>
+      </button>
+
       <div class="profile-icon" onclick="toggleMenu()" title="Mi cuenta">
         <i data-lucide="user" style="width:18px;height:18px;"></i>
       </div>
@@ -40,14 +49,53 @@
 <!-- ======== MAIN ======== -->
 <main class="main">
 
-  <h1 class="page-heading">Vacantes</h1>
-  <p class="page-sub">Gestiona las vacantes abiertas y revisa candidatos postulados</p>
+  <!-- Page heading row -->
+  <div class="page-heading-row">
+    <div>
+      <h1 class="page-heading">Vacantes</h1>
+      <p class="page-sub">Gestiona las vacantes abiertas y revisa candidatos postulados</p>
+    </div>
+  </div>
 
-  <div class="filter-box">
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stats-card">
+      <div class="stats-icon blue">
+        <i data-lucide="briefcase" style="width:20px;height:20px;"></i>
+      </div>
+      <div class="stats-body">
+        <span class="stats-value" id="statVacantes">—</span>
+        <span class="stats-label">Vacantes activas</span>
+      </div>
+    </div>
+    <div class="stats-card">
+      <div class="stats-icon green">
+        <i data-lucide="users" style="width:20px;height:20px;"></i>
+      </div>
+      <div class="stats-body">
+        <span class="stats-value" id="statCandidatos">—</span>
+        <span class="stats-label">Postulaciones pendientes</span>
+      </div>
+    </div>
+    <div class="stats-card">
+      <div class="stats-icon amber">
+        <i data-lucide="calendar-clock" style="width:20px;height:20px;"></i>
+      </div>
+      <div class="stats-body">
+        <span class="stats-value" id="statEntrevistas">—</span>
+        <span class="stats-label">Entrevistas programadas</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search + actions bar -->
+  <div class="filter-box" style="max-width:100%;margin-bottom:0;">
     <i data-lucide="search" style="width:16px;height:16px;color:var(--c-text-3);flex-shrink:0;"></i>
     <input type="text" id="searchInput" placeholder="Buscar vacante..." class="dropdown" oninput="loadVacantes()">
-    <button class="add-btn" onclick="createVacante()" title="Nueva vacante">+</button>
-    <button class="clear-btn" onclick="clearVacantesView()" title="Limpiar búsqueda">&#8635;</button>
+    <button class="add-btn" onclick="createVacante()" title="Nueva vacante">
+      <i data-lucide="plus" style="width:16px;height:16px;"></i>
+    </button>
+    <button class="clear-btn" onclick="clearVacantesView()" title="Limpiar b&uacute;squeda">&#8635;</button>
   </div>
 
   <div class="vacantes-container" id="vacantes"></div>

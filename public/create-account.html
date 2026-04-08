@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AHP &mdash; Crear cuenta</title>
+    <script>
+      (function(){var t=localStorage.getItem('ahp-theme');if(t)document.documentElement.setAttribute('data-theme',t);})();
+    </script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="transitions.js"></script>
 </head>
 <body>
 
@@ -19,7 +23,7 @@
       <h2 class="auth-heading">Crear cuenta</h2>
       <p class="auth-sub">Completa los datos para registrarte como reclutador</p>
 
-      <p class="back-link" onclick="location.href='login.html'" style="margin-bottom:20px;">
+      <p class="back-link" onclick="ahpNavigate('login.html')" style="margin-bottom:20px;">
         &larr; Volver al inicio de sesi&oacute;n
       </p>
 
@@ -118,7 +122,7 @@
       });
       const data = await res.json();
       if (res.ok) {
-        window.location.href = 'dashboard.html';
+        ahpNavigate('dashboard.html');
       } else {
         alert(data.error || 'Error al registrar');
       }

@@ -32,9 +32,10 @@ function renderVacantes(vacantes) {
 
   if (!Array.isArray(vacantes) || vacantes.length === 0) {
     container.innerHTML = `
-      <div class="empty-candidates-state">
+      <div class="empty-state">
+        <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/><path d="M8 7V5a2 2 0 0 1 4 0"/></svg></div>
         <h3>No hay vacantes para mostrar</h3>
-        <p>Prueba con otro término de búsqueda o crea una nueva vacante.</p>
+        <p>Prueba con otro t\u00e9rmino de b\u00fasqueda o crea una nueva vacante con el bot\u00f3n +.</p>
       </div>
     `;
     return;
@@ -255,7 +256,7 @@ async function openEntrevistasPendientes() {
     if (res.status === 401) {
       showInfoModal('Sesion expirada', 'Tu sesión expiró. Inicia sesión nuevamente.');
       setTimeout(() => {
-        window.location.href = 'login.html';
+        ahpNavigate('login.html');
       }, 900);
       return;
     }
@@ -363,7 +364,7 @@ async function cancelInterviewFromList(id) {
 
 function logout() {
   fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
-    window.location.href = 'login.html';
+    ahpNavigate('login.html');
   });
 }
 
@@ -450,8 +451,73 @@ async function submitCreateVacante() {
   }
 }
 
+/* ============================================================
+   DARK MODE TOGGLE
+   ============================================================ */
+
+function initTheme() {
+  const saved = localStorage.getItem('ahp-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', current);
+  localStorage.setItem('ahp-theme', current);
+  updateThemeIcon(current);
+}
+
+function updateThemeIcon(theme) {
+  const btn = document.getElementById('themeToggleBtn');
+  if (!btn) return;
+  btn.innerHTML = theme === 'dark'
+    ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+}
+
+/* ============================================================
+   STATS BAR
+   ============================================================ */
+
+async function loadStats() {
+  try {
+    const [vacRes, candRes, entRes] = await Promise.all([
+      fetch('/api/vacantes?search='),
+      fetch('/api/postulaciones/pending'),
+      fetch('/api/postulaciones/interviews-pending')
+    ]);
+
+    if (vacRes.ok) {
+      const vacs = await vacRes.json();
+      const el = document.getElementById('statVacantes');
+      if (el) el.textContent = Array.isArray(vacs) ? vacs.length : '—';
+    }
+
+    if (candRes.ok) {
+      const cands = await candRes.json();
+      const el = document.getElementById('statCandidatos');
+      if (el) el.textContent = Array.isArray(cands) ? cands.length : '—';
+    }
+
+    if (entRes.ok) {
+      const ents = await entRes.json();
+      const el = document.getElementById('statEntrevistas');
+      if (el) el.textContent = Array.isArray(ents) ? ents.length : '—';
+    }
+  } catch (err) {
+    console.warn('Stats load failed:', err);
+  }
+}
+
 // initial load
+initTheme();
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', toggleTheme);
+}
 loadAreasEspecialidad();
+loadStats();
 loadVacantes();
 
 // close modals when clicking outside
