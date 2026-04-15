@@ -35,6 +35,7 @@ CREATE TABLE candidato (
   telefono TEXT,
   area_especialidad TEXT,
   experiencia_anos INTEGER,
+  photo_path TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (correo)
 );

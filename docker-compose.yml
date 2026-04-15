@@ -5,6 +5,7 @@ services:
       - '3000:3000'
     environment:
       NODE_ENV: production
+      COOKIE_SECURE: 'false'
       PORT: 3000
       DB_FILE: /app/data/ahp.sqlite
       SESSION_DB_FILE: sessions.sqlite

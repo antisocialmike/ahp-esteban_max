@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="transitions.js"></script>
+  <script src="toast.js"></script>
 </head>
 <body class="dash-body">
 
@@ -101,6 +102,19 @@
   <div class="vacantes-container" id="vacantes"></div>
 
 </main>
+
+<!-- ================= PAGINATION CONTROLS ================= -->
+<div class="pagination-controls" id="pagination-controls" style="display:none;padding:16px;gap:12px;justify-content:center;align-items:center;border-top:1px solid var(--c-border);">
+  <button class="pagination-prev" onclick="previousPage()" title="Página anterior">
+    <i data-lucide="chevron-left" style="width:16px;height:16px;"></i>
+    Anterior
+  </button>
+  <span class="pagination-info" style="font-size:14px;color:var(--c-text-2);min-width:120px;text-align:center;">Página 1 de 1</span>
+  <button class="pagination-next" onclick="nextPage()" title="Página siguiente">
+    Siguiente
+    <i data-lucide="chevron-right" style="width:16px;height:16px;"></i>
+  </button>
+</div>
 
 <!-- ================= MODAL CV ================= -->
 <div class="modal" id="cvModal">

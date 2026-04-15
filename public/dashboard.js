@@ -3,6 +3,106 @@
 let selectedVacante = null;
 let selectedCandidate = null;
 let areasEspecialidad = [];
+let currentCandidates = [];
+let csrfToken = '';
+
+// Pagination state
+let paginationState = {
+  vacantesCurrent: 1,
+  vacantesTotal: 1,
+  vacantesLimit: 100,
+  candidatosCurrent: 1,
+  candidatosTotal: 1,
+  candidatosLimit: 100,
+  isViewingCandidates: false,
+  searchQuery: ''
+};
+
+async function ensureCsrfToken() {
+  if (csrfToken) return csrfToken;
+  const res = await fetch('/api/auth/csrf-token', { method: 'GET' });
+  const data = await res.json();
+  csrfToken = data?.csrfToken || '';
+  return csrfToken;
+}
+
+async function requestJson(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const nextOptions = { ...options };
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = await ensureCsrfToken();
+    nextOptions.headers = {
+      ...(options.headers || {}),
+      'X-CSRF-Token': token
+    };
+  }
+
+  const res = await fetch(url, nextOptions);
+  const raw = await res.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    data = null;
+  }
+
+  if (res.status === 401) {
+    showInfoModal('Sesion expirada', 'Tu sesión expiró. Inicia sesión nuevamente.');
+    setTimeout(() => {
+      ahpNavigate('login.html');
+    }, 900);
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    throw new Error((data && data.error) || 'Error de servidor');
+  }
+
+  return data;
+}
+
+// Returns { data, headers } for extracting pagination info
+async function requestJsonWithHeaders(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const nextOptions = { ...options };
+
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const token = await ensureCsrfToken();
+    nextOptions.headers = {
+      ...(options.headers || {}),
+      'X-CSRF-Token': token
+    };
+  }
+
+  const res = await fetch(url, nextOptions);
+  const raw = await res.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    data = null;
+  }
+
+  if (res.status === 401) {
+    showInfoModal('Sesion expirada', 'Tu sesión expiró. Inicia sesión nuevamente.');
+    setTimeout(() => {
+      ahpNavigate('login.html');
+    }, 900);
+    throw new Error('Unauthorized');
+  }
+
+  if (!res.ok) {
+    throw new Error((data && data.error) || 'Error de servidor');
+  }
+
+  return {
+    data,
+    page: parseInt(res.headers.get('X-Page') || '1'),
+    limit: parseInt(res.headers.get('X-Limit') || '100'),
+    totalCount: parseInt(res.headers.get('X-Total-Count') || '0')
+  };
+}
 
 function toggleMenu() {
   const menu = document.getElementById('menu');
@@ -14,15 +114,23 @@ function closeMenu() {
   menu.classList.remove('show');
 }
 
-async function loadVacantes() {
+async function loadVacantes(page = 1) {
   const search = document.getElementById('searchInput').value;
   try {
-    const res = await fetch('/api/vacantes?search=' + encodeURIComponent(search));
-    const vacantes = await res.json();
+    const url = `/api/vacantes?search=${encodeURIComponent(search)}&page=${page}`;
+    const { data: vacantes, page: currentPage, limit, totalCount } = await requestJsonWithHeaders(url);
+    
+    paginationState.vacantesCurrent = currentPage;
+    paginationState.vacantesLimit = limit;
+    paginationState.vacantesTotal = Math.ceil(totalCount / limit);
+    paginationState.isViewingCandidates = false;
+    paginationState.searchQuery = search;
+    
     renderVacantes(vacantes);
+    updatePaginationControls();
   } catch (err) {
     console.error(err);
-    alert('Error loading vacancies');
+    showInfoModal('No fue posible cargar vacantes', err.message || 'Intenta nuevamente.');
   }
 }
 
@@ -44,12 +152,42 @@ function renderVacantes(vacantes) {
   vacantes.forEach(v => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `
-      <span class="card-tag">Vacante</span>
-      <h3>${v.titulo}</h3>
-      <p class="card-meta">${v.area || 'Area sin especificar'}</p>
-      <button class="vacante-select-btn" onclick="selectVacante(${v.id})">Seleccionar</button>
-    `;
+
+    const tag = document.createElement('span');
+    tag.className = 'card-tag';
+    tag.textContent = 'Vacante';
+
+    const title = document.createElement('h3');
+    title.textContent = v.titulo || 'Vacante sin titulo';
+
+    const meta = document.createElement('p');
+    meta.className = 'card-meta';
+    meta.textContent = v.area || 'Area sin especificar';
+
+    const summary = document.createElement('div');
+    summary.className = 'card-summary';
+
+    const idChip = document.createElement('span');
+    idChip.className = 'meta-chip';
+    idChip.textContent = `ID #${v.id}`;
+
+    const typeChip = document.createElement('span');
+    typeChip.className = 'meta-chip';
+    typeChip.textContent = 'Abierta';
+
+    summary.appendChild(idChip);
+    summary.appendChild(typeChip);
+
+    const button = document.createElement('button');
+    button.className = 'vacante-select-btn';
+    button.textContent = 'Ver candidatos';
+    button.addEventListener('click', () => selectVacante(v.id));
+
+    card.appendChild(tag);
+    card.appendChild(title);
+    card.appendChild(meta);
+    card.appendChild(summary);
+    card.appendChild(button);
     container.appendChild(card);
   });
 }
@@ -59,27 +197,30 @@ async function selectVacante(id) {
   await loadCandidatos(id);
 }
 
-async function loadCandidatos(vacanteId, status = '') {
+async function loadCandidatos(vacanteId, status = '', page = 1) {
   try {
-    let url = `/api/vacantes/${vacanteId}/candidatos`;
-    if (status) url += '?status=' + status;
-    const res = await fetch(url);
-    const candidatos = await res.json();
-
-    if (!res.ok) {
-      throw new Error(candidatos.error || 'No se pudieron cargar candidatos');
-    }
+    let url = `/api/vacantes/${vacanteId}/candidatos?page=${page}`;
+    if (status) url += '&status=' + status;
+    
+    const { data: candidatos, page: currentPage, limit, totalCount } = await requestJsonWithHeaders(url);
 
     if (!Array.isArray(candidatos)) {
       throw new Error('Respuesta inválida al cargar candidatos');
     }
 
+    paginationState.candidatosCurrent = currentPage;
+    paginationState.candidatosLimit = limit;
+    paginationState.candidatosTotal = Math.ceil(totalCount / limit);
+    paginationState.isViewingCandidates = true;
+
     if (candidatos.length === 0) {
       renderEmptyCandidatesState();
+      updatePaginationControls();
       return;
     }
 
     renderCandidatos(candidatos);
+    updatePaginationControls();
   } catch (err) {
     console.error(err);
     showInfoModal(
@@ -91,19 +232,104 @@ async function loadCandidatos(vacanteId, status = '') {
 }
 
 function renderCandidatos(candidates) {
+  currentCandidates = candidates;
   const container = document.getElementById('vacantes');
   container.innerHTML = '';
   candidates.forEach(c => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `
-      <div class="avatar"></div>
-      <h3 style="font-size:15px;text-align:center;">${c.nombre}</h3>
-      <p class="card-meta" style="justify-content:center;font-size:12px;">${c.area_especialidad || 'Sin área'}</p>
-      <button class="vacante-select-btn" onclick="openCandidateModal(${c.postulacion_id})">Ver perfil</button>
-    `;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    if (c.photo_path) {
+      avatar.style.backgroundImage = `url(${c.photo_path})`;
+    }
+
+    const name = document.createElement('h3');
+    name.textContent = c.nombre || 'Sin nombre';
+
+    const area = document.createElement('p');
+    area.className = 'card-meta';
+    area.textContent = c.area_especialidad || 'Sin area';
+
+    const summary = document.createElement('div');
+    summary.className = 'card-summary';
+
+    const statusChip = document.createElement('span');
+    statusChip.className = `meta-chip status-${String(c.estatus || 'PENDIENTE').toLowerCase()}`;
+    statusChip.textContent = c.estatus || 'PENDIENTE';
+
+    const expChip = document.createElement('span');
+    expChip.className = 'meta-chip';
+    expChip.textContent = `${c.experiencia_anos || 0} años exp.`;
+
+    summary.appendChild(statusChip);
+    summary.appendChild(expChip);
+
+    const details = document.createElement('div');
+    details.className = 'candidate-details';
+
+    const email = document.createElement('p');
+    email.className = 'candidate-detail';
+    email.textContent = c.correo || 'Correo no disponible';
+
+    const interview = document.createElement('p');
+    interview.className = 'candidate-detail';
+    interview.textContent = c.interview_at
+      ? `Entrevista: ${new Date(c.interview_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}`
+      : 'Entrevista pendiente';
+
+    details.appendChild(email);
+    details.appendChild(interview);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const button = document.createElement('button');
+    button.className = 'vacante-select-btn';
+    button.textContent = 'Ver perfil';
+    button.addEventListener('click', () => openCandidateModal(c.postulacion_id));
+
+    const acceptButton = document.createElement('button');
+    acceptButton.className = 'quick-action-btn quick-action-accept';
+    acceptButton.textContent = 'Aceptar';
+    acceptButton.disabled = c.estatus === 'ACEPTADO';
+    acceptButton.addEventListener('click', () => quickUpdateCandidateStatus(c.postulacion_id, 'ACEPTADO'));
+
+    const rejectButton = document.createElement('button');
+    rejectButton.className = 'quick-action-btn quick-action-reject';
+    rejectButton.textContent = 'Rechazar';
+    rejectButton.disabled = c.estatus === 'RECHAZADO';
+    rejectButton.addEventListener('click', () => quickUpdateCandidateStatus(c.postulacion_id, 'RECHAZADO'));
+
+    card.appendChild(avatar);
+    card.appendChild(name);
+    card.appendChild(area);
+    card.appendChild(summary);
+    card.appendChild(details);
+    actions.appendChild(button);
+    actions.appendChild(acceptButton);
+    actions.appendChild(rejectButton);
+    card.appendChild(actions);
     container.appendChild(card);
   });
+}
+
+async function quickUpdateCandidateStatus(postulacionId, status) {
+  try {
+    await requestJson(`/api/postulaciones/${postulacionId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    Toast.success(`Candidato ${status === 'ACEPTADO' ? 'aceptado' : 'rechazado'}`);
+    if (selectedVacante) {
+      loadCandidatos(selectedVacante, '', paginationState.candidatosCurrent);
+    }
+  } catch (err) {
+    console.error(err);
+    Toast.error(err.message || 'No se pudo actualizar el estado');
+  }
 }
 
 function renderEmptyCandidatesState() {
@@ -119,13 +345,7 @@ function renderEmptyCandidatesState() {
 
 async function openCandidateModal(postulacionId) {
   try {
-    // fetch postulacion detail list? we already have minimal
-    // The server query earlier returned enough info; maybe store in global map
-    // but for simplicity we'll request postulacion list and then find by id
-    const vacId = selectedVacante;
-    const res = await fetch(`/api/vacantes/${vacId}/candidatos`);
-    const arr = await res.json();
-    const rec = arr.find(r => r.postulacion_id === postulacionId);
+    const rec = currentCandidates.find((row) => row.postulacion_id === postulacionId);
     if (!rec) return;
     selectedCandidate = rec;
     // fill modal
@@ -169,15 +389,17 @@ function closeModal() {
 async function updateStatus(status) {
   if (!selectedCandidate) return;
   try {
-    await fetch(`/api/postulaciones/${selectedCandidate.postulacion_id}/status`, {
+    await requestJson(`/api/postulaciones/${selectedCandidate.postulacion_id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
+    Toast.success(`Candidato ${status === 'ACEPTADO' ? 'aceptado' : 'rechazado'}`);
     closeModal();
     if (selectedVacante) loadCandidatos(selectedVacante);
   } catch (err) {
     console.error(err);
+    Toast.error(err.message || 'Error al actualizar estado');
   }
 }
 
@@ -185,39 +407,34 @@ async function saveInterview() {
   if (!selectedCandidate) return;
   const iv = document.getElementById('interviewInput').value;
   if (!iv) {
-    showInfoModal('Fecha requerida', 'Selecciona una fecha y hora para guardar la entrevista.');
+    Toast.warning('Selecciona una fecha y hora para guardar la entrevista');
     return;
   }
 
   try {
-    const res = await fetch(`/api/postulaciones/${selectedCandidate.postulacion_id}/interview`, {
+    await requestJson(`/api/postulaciones/${selectedCandidate.postulacion_id}/interview`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ interview_at: iv || null })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'No se pudo guardar la entrevista');
-    }
 
     closeModal();
     const when = new Date(iv);
     const prettyDate = Number.isNaN(when.getTime())
       ? iv
       : when.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
-    showInfoModal('Entrevista agendada', `La entrevista quedó agendada para ${prettyDate}.`);
+    Toast.success(`Entrevista agendada para ${prettyDate}`);
     if (selectedVacante) loadCandidatos(selectedVacante);
   } catch (err) {
     console.error(err);
-    showInfoModal('No se pudo agendar', err.message || 'Intenta nuevamente.');
+    Toast.error(err.message || 'No se pudo agendar la entrevista');
   }
 }
 
 // pendientes view
 async function openPendientes() {
   try {
-    const res = await fetch('/api/postulaciones/pending');
-    const list = await res.json();
+    const list = await requestJson('/api/postulaciones/pending');
     const container = document.getElementById('pendientesList');
     container.innerHTML = '';
     list.forEach(item => {
@@ -244,26 +461,7 @@ function closePendientes() {
 
 async function openEntrevistasPendientes() {
   try {
-    const res = await fetch('/api/postulaciones/interviews-pending');
-    const text = await res.text();
-    let list;
-    try {
-      list = text ? JSON.parse(text) : [];
-    } catch {
-      list = [];
-    }
-
-    if (res.status === 401) {
-      showInfoModal('Sesion expirada', 'Tu sesión expiró. Inicia sesión nuevamente.');
-      setTimeout(() => {
-        ahpNavigate('login.html');
-      }, 900);
-      return;
-    }
-
-    if (!res.ok) {
-      throw new Error((list && list.error) || 'No se pudieron cargar entrevistas');
-    }
+    const list = await requestJson('/api/postulaciones/interviews-pending');
 
     if (!Array.isArray(list)) {
       throw new Error('Respuesta inválida al cargar entrevistas');
@@ -313,9 +511,65 @@ function clearVacantesView() {
   loadVacantes();
 }
 
+function updatePaginationControls() {
+  const container = document.getElementById('pagination-controls');
+  if (!container) return;
+
+  const state = paginationState;
+  const isVacantes = !state.isViewingCandidates;
+  const current = isVacantes ? state.vacantesCurrent : state.candidatosCurrent;
+  const total = isVacantes ? state.vacantesTotal : state.candidatosTotal;
+
+  // Show/hide pagination
+  if (total <= 1) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'flex';
+
+  // Update button states
+  const prevBtn = container.querySelector('.pagination-prev');
+  const nextBtn = container.querySelector('.pagination-next');
+  const pageInfo = container.querySelector('.pagination-info');
+
+  if (prevBtn) prevBtn.disabled = current <= 1;
+  if (nextBtn) nextBtn.disabled = current >= total;
+  if (pageInfo) pageInfo.textContent = `Página ${current} de ${total}`;
+}
+
+function previousPage() {
+  const state = paginationState;
+  const isVacantes = !state.isViewingCandidates;
+  const current = isVacantes ? state.vacantesCurrent : state.candidatosCurrent;
+
+  if (current <= 1) return;
+
+  if (isVacantes) {
+    loadVacantes(current - 1);
+  } else {
+    loadCandidatos(selectedVacante, '', current - 1);
+  }
+}
+
+function nextPage() {
+  const state = paginationState;
+  const isVacantes = !state.isViewingCandidates;
+  const current = isVacantes ? state.vacantesCurrent : state.candidatosCurrent;
+  const total = isVacantes ? state.vacantesTotal : state.candidatosTotal;
+
+  if (current >= total) return;
+
+  if (isVacantes) {
+    loadVacantes(current + 1);
+  } else {
+    loadCandidatos(selectedVacante, '', current + 1);
+  }
+}
+
 async function updateStatusFromList(id, status) {
   try {
-    await fetch(`/api/postulaciones/${id}/status`, {
+    await requestJson(`/api/postulaciones/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -328,15 +582,11 @@ async function updateStatusFromList(id, status) {
 
 async function acceptFromInterviewList(id) {
   try {
-    const res = await fetch(`/api/postulaciones/${id}/status`, {
+    await requestJson(`/api/postulaciones/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'ACEPTADO' })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'No se pudo aceptar la postulación');
-    }
     openEntrevistasPendientes();
   } catch (err) {
     console.error(err);
@@ -346,15 +596,11 @@ async function acceptFromInterviewList(id) {
 
 async function cancelInterviewFromList(id) {
   try {
-    const res = await fetch(`/api/postulaciones/${id}/status`, {
+    await requestJson(`/api/postulaciones/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'RECHAZADO' })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'No se pudo marcar como no contratado');
-    }
     openEntrevistasPendientes();
   } catch (err) {
     console.error(err);
@@ -363,18 +609,16 @@ async function cancelInterviewFromList(id) {
 }
 
 function logout() {
-  fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
-    ahpNavigate('login.html');
-  });
+  requestJson('/api/auth/logout', { method: 'POST' })
+    .catch(() => null)
+    .finally(() => {
+      ahpNavigate('login.html');
+    });
 }
 
 async function loadAreasEspecialidad() {
   try {
-    const res = await fetch('/api/vacantes/areas-especialidad');
-    const list = await res.json();
-    if (!res.ok) {
-      throw new Error(list.error || 'No se pudieron cargar las areas');
-    }
+    const list = await requestJson('/api/vacantes/areas-especialidad');
     areasEspecialidad = Array.isArray(list) ? list : [];
     renderAreaOptions();
   } catch (err) {
@@ -422,32 +666,43 @@ function closeInfoModal() {
 async function submitCreateVacante() {
   const titulo = document.getElementById('vacanteTituloInput').value.trim();
   const area = document.getElementById('vacanteAreaSelect').value;
+  const submitBtn = document.querySelector('.vacante-form-actions .submit-btn');
+  const originalText = submitBtn ? submitBtn.textContent : 'Guardar vacante';
 
   if (!titulo) {
-    alert('El título de la vacante es obligatorio');
+    Toast.warning('El título de la vacante es obligatorio');
     return;
   }
 
   if (!area) {
-    alert('Selecciona un área de especialidad');
+    Toast.warning('Selecciona un área de especialidad');
     return;
   }
 
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitBtn.textContent = 'Guardando...';
+  }
+
   try {
-    const res = await fetch('/api/vacantes', {
+    await requestJson('/api/vacantes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ titulo, area })
     });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'No se pudo crear la vacante');
-    }
+    Toast.success('Vacante creada exitosamente');
     closeCreateVacanteModal();
     loadVacantes();
   } catch (err) {
     console.error(err);
-    alert(err.message || 'Error al crear vacante');
+    Toast.error(err.message || 'Error al crear vacante');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtn.textContent = originalText;
+    }
   }
 }
 
@@ -519,6 +774,7 @@ if (themeToggleBtn) {
 loadAreasEspecialidad();
 loadStats();
 loadVacantes();
+ensureCsrfToken().catch(() => null);
 
 // close modals when clicking outside
 window.onclick = function(e) {

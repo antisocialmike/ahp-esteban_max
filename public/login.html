@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="transitions.js"></script>
+  <script src="toast.js"></script>
 </head>
 <body>
 
@@ -25,17 +26,19 @@
 
       <div class="input-group">
         <i data-lucide="mail" class="input-icon"></i>
-        <input id="email" type="email" placeholder="Correo electrónico" autocomplete="email">
+        <input id="email" type="email" placeholder="Correo electrónico" autocomplete="email" aria-label="Correo electrónico" required>
       </div>
 
       <div class="input-group">
         <i data-lucide="lock" class="input-icon"></i>
-        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password">
+        <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" aria-label="Contraseña" required>
       </div>
 
-      <button type="button" class="submit-btn" onclick="login()">
+      <button type="button" class="submit-btn" onclick="login()" aria-busy="false" id="loginBtn">
         Iniciar sesión
       </button>
+
+      <p id="statusMessage" class="small-text" style="margin-top:12px;display:none;" role="status" aria-live="polite"></p>
 
       <p class="small-text" style="margin-top:20px;">
         ¿No tienes cuenta?
@@ -74,13 +77,55 @@
 
   <script>lucide.createIcons();</script>
   <script>
+  function ensureHint(inputId) {
+    const input = document.getElementById(inputId);
+    const group = input.closest('.input-group');
+    let hint = group.querySelector('.input-validation-hint');
+    if (!hint) {
+      hint = document.createElement('p');
+      hint.className = 'input-validation-hint';
+      group.appendChild(hint);
+    }
+    return { input, group, hint };
+  }
+
+  function setFieldState(inputId, message) {
+    const { input, group, hint } = ensureHint(inputId);
+    const hasError = Boolean(message);
+    group.classList.toggle('is-error', hasError);
+    input.classList.toggle('is-error', hasError);
+    input.setAttribute('aria-invalid', hasError ? 'true' : 'false');
+    hint.textContent = message || '';
+  }
+
+  function validateLoginForm() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    setFieldState('email', !email ? 'Ingresa tu correo.' : (!emailOk ? 'Ingresa un correo válido.' : ''));
+    setFieldState('password', !password ? 'Ingresa tu contraseña.' : '');
+
+    return emailOk && Boolean(password);
+  }
+
   async function login() {
     const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    if (!email || !password) {
-      alert('Por favor ingresa correo y contraseña');
+    const btn = document.getElementById('loginBtn');
+    
+    if (!validateLoginForm()) {
+      Toast.error('Corrige los campos marcados para continuar.');
       return;
     }
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    const originalText = btn.textContent;
+    btn.classList.add('loading');
+    btn.textContent = 'Validando...';
+    
     try {
       const res  = await fetch('/api/auth/login', {
         method: 'POST',
@@ -88,19 +133,32 @@
         body: JSON.stringify({ correo: email, password })
       });
       const data = await res.json();
+      
       if (res.ok) {
-        ahpNavigate('dashboard.html');
+        Toast.success('Acceso correcto. Redirigiendo...');
+        setTimeout(() => ahpNavigate('dashboard.html'), 500);
+      } else if (res.status === 429) {
+        Toast.error('Demasiados intentos. Intenta de nuevo en 10 minutos.');
       } else {
-        alert(data.error || 'No se pudo iniciar sesión');
+        Toast.error(data.error || 'No se pudo iniciar sesión');
       }
     } catch (err) {
       console.error(err);
-      alert('Error de red');
+      Toast.error('Error de red. Intenta nuevamente.');
+    } finally {
+      btn.disabled = false;
+      btn.setAttribute('aria-busy', 'false');
+      btn.classList.remove('loading');
+      btn.textContent = originalText;
     }
   }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') login();
+  });
+
+  ['email', 'password'].forEach((fieldId) => {
+    document.getElementById(fieldId).addEventListener('input', validateLoginForm);
   });
   </script>
 </body>

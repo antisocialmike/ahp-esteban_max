@@ -4,12 +4,12 @@ const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const multer = require('multer');
+const { randomBytes } = require('crypto');
 
 // generate a session secret at runtime if none provided in .env
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.startsWith('replace')) {
-  const { randomBytes } = require('crypto');
   const secret = randomBytes(48).toString('hex');
-  console.warn('No valid SESSION_SECRET found, generated one:', secret);
+  console.warn('No valid SESSION_SECRET found; generated temporary secret for this process.');
   process.env.SESSION_SECRET = secret;
 }
 
@@ -22,19 +22,23 @@ const { sendApplicationReceivedEmail } = require('./services/emailNotifications'
 
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // simple request logger for debugging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
-
-app.use((req, res, next) => {
-  if (req.body && Object.keys(req.body).length) {
-    console.log('  body:', req.body);
-  }
   next();
 });
 
@@ -53,9 +57,48 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
-    cookie: { maxAge: 1000 * 60 * 60 * 2 }
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 2,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true'
+    }
   })
 );
+
+app.use((req, res, next) => {
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = randomBytes(32).toString('hex');
+  }
+  res.setHeader('X-CSRF-Token', req.session.csrfToken);
+  next();
+});
+
+function csrfExempt(req) {
+  if (req.path === '/upload') return true;
+  if (req.path.startsWith('/api/public/')) return true;
+  if (req.path === '/api/auth/login') return true;
+  if (req.path === '/api/auth/register') return true;
+  if (req.path === '/api/health/db') return true;
+  return false;
+}
+
+function requireCsrf(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  if (csrfExempt(req)) {
+    return next();
+  }
+
+  const token = req.get('x-csrf-token');
+  if (!token || token !== req.session?.csrfToken) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
+  }
+  return next();
+}
+
+app.use(requireCsrf);
 
 // static files with explicit UTF-8 charset for text assets
 app.use(
@@ -275,6 +318,10 @@ app.get('/api/health/db', async (req, res) => {
   }
 });
 
+app.get('/api/auth/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.session.csrfToken });
+});
+
 // Public recommendations endpoint used by CV upload flow.
 app.get('/api/public/vacantes/recomendadas', async (req, res) => {
   try {
@@ -341,7 +388,7 @@ app.post('/api/public/postulaciones', async (req, res) => {
 
       return res.json({ ok: true, alreadyApplied: false, postulacionId: insertResult.insertId });
     } catch (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
+      if (err.code === 'ER_DUP_ENTRY' || err.code === 'SQLITE_CONSTRAINT') {
         return res.json({ ok: true, alreadyApplied: true });
       }
       throw err;
@@ -374,7 +421,21 @@ app.use('/api/candidatos', candidatosRoutes); // POST open, GET protected inside
 // fallback for other static routes (login, create-account, index)
 // they are served by express.static
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
 });
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const PORT = process.env.PORT || 3000;
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;

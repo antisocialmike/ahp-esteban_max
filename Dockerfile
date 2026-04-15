@@ -1,11 +1,12 @@
-# Use Node 18 on Alpine for a small production image
-FROM node:18-alpine
+# Use Node 20 on Alpine because sqlite3 6.x requires Node >=20.17
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies first so Docker can cache this layer when package files don't change
+# Install dependencies first so Docker can cache this layer when package files don't change.
+# npm ci is currently failing in Docker on this dependency tree, while npm install resolves it correctly.
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy app sources
 COPY . .

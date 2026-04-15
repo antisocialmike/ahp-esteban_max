@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="transitions.js"></script>
+  <script src="toast.js"></script>
 </head>
 <body>
 
@@ -116,6 +117,23 @@ function preventDefaults(e) {
   e.stopPropagation();
 }
 
+function showInfo(title, message) {
+  vacantesListEl.innerHTML = '';
+  vacantesSubtitleEl.textContent = '';
+  var box = document.createElement('div');
+  box.className = 'vacante-empty';
+  var strong = document.createElement('strong');
+  strong.textContent = title || 'Información';
+  var br = document.createElement('br');
+  var span = document.createElement('span');
+  span.textContent = message || '';
+  box.appendChild(strong);
+  box.appendChild(br);
+  box.appendChild(span);
+  vacantesListEl.appendChild(box);
+  openVacantesModal();
+}
+
 ['dragenter','dragover'].forEach(function(ev) {
   dropZone.addEventListener(ev, function(){ dropZone.classList.add('dragover'); }, false);
 });
@@ -138,7 +156,7 @@ vacantesModal.addEventListener('click', function(e) {
 });
 debugConnectionBtn.addEventListener('click', async function() {
   var dbConnected = await checkDbConnection();
-  alert(dbConnected ? 'Conexi\u00f3n a SQLite: OK' : 'Conexi\u00f3n a SQLite: FALL\u00d3');
+  showInfo('Estado de base de datos', dbConnected ? 'Conexión a SQLite: OK' : 'Conexión a SQLite: FALLÓ');
 });
 
 function handleDrop(e) {
@@ -172,12 +190,12 @@ async function handleFiles(files) {
   if (!files || files.length === 0) return;
   var file = files[0];
   if (file.type !== 'application/pdf') {
-    alert('Solo se permiten archivos PDF');
+    showInfo('Archivo inválido', 'Solo se permiten archivos PDF');
     return;
   }
   var dbConnected = await checkDbConnection();
   if (!dbConnected) {
-    alert('No se puede subir el archivo porque no hay conexi\u00f3n con la base de datos.');
+    showInfo('Servicio no disponible', 'No se puede subir el archivo porque no hay conexión con la base de datos.');
     return;
   }
   uploadFile(file);
@@ -305,7 +323,7 @@ function uploadFile(file) {
     })
     .catch(function(err) {
       console.error(err);
-      alert(err.message || 'Upload failed');
+      showInfo('No se pudo procesar el CV', err.message || 'Upload failed');
     })
     .finally(function() { hideLoading(); });
 }

@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="transitions.js"></script>
+  <script src="toast.js"></script>
 </head>
 <body>
 
@@ -68,6 +69,8 @@
           Crear cuenta
         </button>
 
+        <p id="statusMessage" class="small-text" style="margin-top:12px;display:none;"></p>
+
       </form>
 
     </div>
@@ -98,6 +101,47 @@
 
   <script>lucide.createIcons();</script>
   <script>
+  function ensureHint(inputId) {
+    const input = document.getElementById(inputId);
+    const group = input.closest('.input-group');
+    let hint = group.querySelector('.input-validation-hint');
+    if (!hint) {
+      hint = document.createElement('p');
+      hint.className = 'input-validation-hint';
+      group.appendChild(hint);
+    }
+    return { input, group, hint };
+  }
+
+  function setFieldState(inputId, message) {
+    const { input, group, hint } = ensureHint(inputId);
+    const hasError = Boolean(message);
+    group.classList.toggle('is-error', hasError);
+    input.classList.toggle('is-error', hasError);
+    input.setAttribute('aria-invalid', hasError ? 'true' : 'false');
+    hint.textContent = message || '';
+  }
+
+  function validateRegisterForm() {
+    const nombre = document.getElementById('name').value.trim();
+    const telefono = document.getElementById('phone').value.trim();
+    const correo = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirmPassword').value;
+
+    setFieldState('name', nombre.length < 2 ? 'Ingresa tu nombre completo.' : '');
+    setFieldState('phone', telefono && !/^[\d\s()+-]{7,20}$/.test(telefono) ? 'Ingresa un teléfono válido.' : '');
+    setFieldState('email', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? 'Ingresa un correo válido.' : '');
+    setFieldState('password', password.length < 8 ? 'La contraseña debe tener al menos 8 caracteres.' : '');
+    setFieldState('confirmPassword', confirm !== password ? 'Las contraseñas no coinciden.' : '');
+
+    return nombre.length >= 2
+      && (!telefono || /^[\d\s()+-]{7,20}$/.test(telefono))
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)
+      && password.length >= 8
+      && confirm === password;
+  }
+
   async function register() {
     const nombre   = document.getElementById('name').value.trim();
     const telefono = document.getElementById('phone').value.trim();
@@ -105,15 +149,20 @@
     const password = document.getElementById('password').value;
     const confirm  = document.getElementById('confirmPassword').value;
     const campus   = document.getElementById('campus').value.trim();
+    const btn = document.querySelector('.submit-btn');
 
-    if (!nombre || !correo || !password) {
-      alert('Nombre, correo y contrase\u00f1a son requeridos');
+    if (!validateRegisterForm()) {
+      Toast.error('Corrige los campos marcados para continuar.');
       return;
     }
-    if (password !== confirm) {
-      alert('Las contrase\u00f1as no coinciden');
-      return;
-    }
+    
+    // Show loading state
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    const originalText = btn.textContent;
+    btn.classList.add('loading');
+    btn.textContent = 'Creando cuenta...';
+    
     try {
       const res  = await fetch('/api/auth/register', {
         method: 'POST',
@@ -121,16 +170,29 @@
         body: JSON.stringify({ nombre, correo, telefono, campus, password })
       });
       const data = await res.json();
+      
       if (res.ok) {
-        ahpNavigate('dashboard.html');
+        Toast.success('Cuenta creada. Redirigiendo...');
+        setTimeout(() => ahpNavigate('dashboard.html'), 500);
+      } else if (res.status === 429) {
+        Toast.error('Demasiados intentos. Intenta de nuevo más tarde.');
       } else {
-        alert(data.error || 'Error al registrar');
+        Toast.error(data.error || 'Error al registrar');
       }
     } catch (err) {
       console.error(err);
-      alert('Error de red');
+      Toast.error('Error de red. Intenta nuevamente.');
+    } finally {
+      btn.disabled = false;
+      btn.setAttribute('aria-busy', 'false');
+      btn.classList.remove('loading');
+      btn.textContent = originalText;
     }
   }
+
+  ['name', 'phone', 'email', 'password', 'confirmPassword'].forEach((fieldId) => {
+    document.getElementById(fieldId).addEventListener('input', validateRegisterForm);
+  });
   </script>
 </body>
 </html>

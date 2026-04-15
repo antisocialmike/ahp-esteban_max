@@ -555,6 +555,26 @@ body {
   box-shadow: 0 4px 14px rgba(37,99,235,.36);
 }
 
+/* Loading state for submit button */
+.submit-btn:disabled {
+  background: var(--c-accent);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-btn.loading::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  vertical-align: middle;
+}
+
 /* Links below form */
 .create-account,
 .back-link {
@@ -837,6 +857,88 @@ body.dash-body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.card-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.meta-chip.status-pendiente {
+  color: var(--c-warning);
+  border-color: color-mix(in srgb, var(--c-warning) 35%, var(--c-border));
+}
+
+.meta-chip.status-aceptado {
+  color: var(--c-success);
+  border-color: color-mix(in srgb, var(--c-success) 35%, var(--c-border));
+}
+
+.meta-chip.status-rechazado {
+  color: var(--c-danger);
+  border-color: color-mix(in srgb, var(--c-danger) 35%, var(--c-border));
+}
+
+.candidate-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.candidate-detail {
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+}
+
+.quick-action-btn {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 9px 12px;
+  transition: border-color .18s, background .18s, color .18s;
+}
+
+.quick-action-btn:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-faint);
+}
+
+.quick-action-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.quick-action-accept {
+  color: var(--c-success);
+}
+
+.quick-action-reject {
+  color: var(--c-danger);
 }
 
 .card-tag {
@@ -1417,39 +1519,177 @@ body.dash-body {
    RESPONSIVE
    ============================================================ */
 
+@media (max-width: 1024px) {
+  .welcome-brand,
+  .welcome-action,
+  .left-panel,
+  .right-panel {
+    padding: 56px 40px;
+  }
+
+  .welcome-brand .brand-title {
+    font-size: 34px;
+  }
+
+  .welcome-action h2,
+  .right-panel .rp-title {
+    font-size: 30px;
+  }
+
+  .welcome-action,
+  .right-panel {
+    gap: 18px;
+  }
+
+  .drop-zone,
+  .welcome-cta {
+    max-width: none;
+  }
+
+  .main {
+    padding: 24px 28px;
+  }
+
+  .stats-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vacantes-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modal-content,
+  .vacantes-modal-card,
+  .candidate-card-wrap {
+    padding: 28px;
+  }
+}
+
 @media (max-width: 768px) {
   .welcome-page,
   .login-container {
     grid-template-columns: 1fr;
   }
-  .welcome-brand,
+
+  .welcome-brand {
+    min-height: 42vh;
+    align-items: center;
+    text-align: center;
+    padding: 48px 28px 32px;
+  }
+
+  .welcome-brand .brand-title {
+    font-size: 32px;
+  }
+
+  .welcome-brand .brand-sub,
+  .welcome-action p {
+    max-width: 480px;
+  }
+
+  .welcome-brand .brand-badges {
+    justify-content: center;
+  }
+
+  .welcome-action {
+    padding: 32px 20px 40px;
+    justify-content: flex-start;
+  }
+
   .right-panel {
     display: none;
   }
+
   .left-panel {
-    padding: 48px 32px;
+    min-height: 100vh;
+    padding: 36px 22px 40px;
   }
+
   .main {
-    padding: 20px;
+    padding: 18px 16px 28px;
   }
+
+  .header {
+    height: auto;
+    min-height: 64px;
+    padding: 12px 16px;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .header .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .header .header-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .filter-box {
     max-width: 100%;
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 10px;
   }
-  .vacantes-container {
+
+  .filter-box > i {
+    order: 1;
+  }
+
+  .filter-box .dropdown {
+    order: 2;
+    flex: 1 1 100%;
+  }
+
+  .add-btn,
+  .clear-btn {
+    order: 3;
+  }
+
+  .stats-bar,
+  .vacantes-container,
+  .prospects-container {
     grid-template-columns: 1fr;
   }
+
   .cv-layout {
     flex-direction: column;
     align-items: center;
   }
+
+  .card-actions {
+    grid-template-columns: 1fr;
+  }
+
   .candidate-card-wrap {
     padding: 32px 24px;
   }
-  .header {
-    padding: 0 20px;
+
+  .pagination-controls {
+    flex-wrap: wrap;
+    padding: 14px 12px !important;
   }
-  .welcome-action {
-    padding: 48px 32px;
+
+  .pagination-info {
+    width: 100%;
+    order: -1;
+  }
+
+  .pagination-prev,
+  .pagination-next {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .welcome-action,
+  .drop-zone,
+  .welcome-cta {
+    width: 100%;
   }
 }
 
@@ -1741,6 +1981,376 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .welcome-brand {
+    min-height: 36vh;
+    padding: 40px 20px 24px;
+  }
+
+  .welcome-brand .brand-title {
+    font-size: 28px;
+  }
+
+  .welcome-action {
+    padding: 24px 16px 32px;
+  }
+
+  .welcome-action h2,
+  .left-panel .auth-heading,
+  .candidate-card-wrap h2 {
+    font-size: 24px;
+  }
+
+  .left-panel .auth-logo,
+  .candidate-card-wrap .cc-logo {
+    margin-bottom: 22px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .row .input-group.small {
+    flex: 1 1 auto;
+  }
+
+  .candidate-page {
+    padding: 20px 12px;
+  }
+
+  .candidate-card-wrap {
+    padding: 24px 18px;
+    border-radius: 24px;
+  }
+
+  .modal,
+  .vacantes-modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-content,
+  .vacantes-modal-card {
+    width: 100%;
+    max-height: 88vh;
+    margin-top: auto;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .close-btn,
+  .vacantes-close-btn {
+    top: 14px;
+    right: 16px;
+  }
+
+  .cv-photo {
+    width: 88px;
+    height: 88px;
+  }
+
+  #actionButtons,
+  .vacante-form-actions {
+    flex-direction: column;
+  }
+
+  .vacante-form-actions {
+    justify-content: stretch;
+  }
+
+  .vacante-form-actions .submit-btn {
+    width: 100% !important;
+  }
+
+  .toast-container {
+    top: auto;
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .toast {
+    max-width: none;
+  }
 }
+
+/* ============================================================
+   PAGINATION CONTROLS
+   ============================================================ */
+
+.pagination-controls {
+  background: var(--c-surface);
+  box-shadow: var(--shadow-sm);
 }
+
+.pagination-prev,
+.pagination-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.pagination-prev:hover:not(:disabled),
+.pagination-next:hover:not(:disabled) {
+  border-color: var(--c-accent);
+  background: var(--c-accent-faint);
+  color: var(--c-accent);
+}
+
+.pagination-prev:disabled,
+.pagination-next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--c-surface);
+  border-left: 4px solid;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+  font-weight: 500;
+  animation: toastSlideIn .3s ease;
+  pointer-events: all;
+  max-width: 380px;
+}
+
+.toast.success { border-color: var(--c-success); color: var(--c-success); }
+.toast.error { border-color: var(--c-danger); color: var(--c-danger); }
+.toast.info { border-color: var(--c-accent); color: var(--c-accent); }
+.toast.warning { border-color: var(--c-warning); color: var(--c-warning); }
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.toast-message {
+  flex: 1;
+  color: var(--c-text-2);
+}
+
+.toast.success .toast-message { color: var(--c-text); }
+.toast.error .toast-message { color: var(--c-text); }
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--c-text-3);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  transition: color .15s;
+}
+.toast-close:hover { color: var(--c-text-2); }
+
+@keyframes toastSlideIn {
+  from { transform: translateX(400px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(400px); opacity: 0; }
+}
+
+.toast.hide { animation: toastSlideOut .3s ease forwards; }
+
+/* ============================================================
+   ENHANCED INPUT VALIDATION
+   ============================================================ */
+
+.input-group {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.input-group input.is-error {
+  border-color: var(--c-danger);
+  background: var(--c-danger-faint);
+}
+
+.input-group.is-error .input-icon {
+  color: var(--c-danger);
+}
+
+.input-group input.is-error:focus {
+  border-color: var(--c-danger);
+  box-shadow: 0 0 0 3px rgba(220,38,38,.12);
+}
+
+.input-validation-hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+  margin-top: 6px;
+  display: none;
+  line-height: 1.4;
+}
+
+.input-group.has-hint .input-validation-hint {
+  display: block;
+}
+
+.input-group.is-error .input-validation-hint {
+  color: var(--c-danger);
+}
+
+.input-group.is-success .input-validation-hint {
+  color: var(--c-success);
+}
+
+/* Input focus management */
+.input-group input:focus::placeholder {
+  color: transparent;
+}
+
+/* Better placeholder text */
+.input-group input::placeholder {
+  color: var(--c-text-3);
+  font-weight: 500;
+}
+
+/* ============================================================
+   ENHANCED BUTTON STATES
+   ============================================================ */
+
+.vacante-select-btn:disabled,
+.vacante-select-btn.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vacante-select-btn:disabled:hover,
+.vacante-select-btn.is-disabled:hover {
+  background: var(--c-bg);
+  border-color: var(--c-border);
+  color: var(--c-navy-mid);
+}
+
+.vacante-apply-btn:disabled,
+.vacante-apply-btn.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.submit-btn:focus,
+.vacante-select-btn:focus,
+.vacante-apply-btn:focus {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   KEYBOARD NAVIGATION VISIBILITY
+   ============================================================ */
+
+*:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   IMPROVED MOBILE TOUCH TARGETS
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .submit-btn,
+  .vacante-select-btn,
+  .vacante-apply-btn,
+  .btn-primary,
+  .btn-outline {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+
+  .add-btn,
+  .clear-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .input-group input,
+  .input-group select {
+    font-size: 16px;
+  }
+
+  .vacantes-container {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .toast {
+    max-width: calc(100vw - 40px);
+  }
+}
+
+/* ============================================================
+   BETTER FOCUS INDICATORS
+   ============================================================ */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+}
+
+
 

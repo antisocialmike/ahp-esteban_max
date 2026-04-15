@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="transitions.js"></script>
+  <script src="toast.js"></script>
 </head>
 <body>
 
@@ -22,6 +23,7 @@
       <p class="cc-sub">Completa tu información para postularte a una vacante académica</p>
 
       <p id="feedback" class="success-message"></p>
+      <p id="statusMessage" class="small-text" style="display:none;margin-bottom:10px;"></p>
 
       <form id="candidateForm" onsubmit="event.preventDefault(); submitCandidate();">
 
@@ -72,12 +74,62 @@
 
   <script>lucide.createIcons();</script>
   <script>
+  function ensureHint(inputId) {
+    const input = document.getElementById(inputId);
+    const group = input.closest('.input-group');
+    let hint = group.querySelector('.input-validation-hint');
+    if (!hint) {
+      hint = document.createElement('p');
+      hint.className = 'input-validation-hint';
+      group.appendChild(hint);
+    }
+    return { input, group, hint };
+  }
+
+  function setFieldState(inputId, message) {
+    const { input, group, hint } = ensureHint(inputId);
+    const hasError = Boolean(message);
+    group.classList.toggle('is-error', hasError);
+    input.classList.toggle('is-error', hasError);
+    input.setAttribute('aria-invalid', hasError ? 'true' : 'false');
+    hint.textContent = message || '';
+  }
+
+  function validateCandidateForm() {
+    const nombre = document.getElementById('c_nombre').value.trim();
+    const correo = document.getElementById('c_correo').value.trim();
+    const experiencia = document.getElementById('c_experiencia').value;
+    const vacante = document.getElementById('c_vacante').value;
+    const photo = document.getElementById('c_photo').files[0];
+
+    setFieldState('c_nombre', nombre.length < 2 ? 'Ingresa tu nombre completo.' : '');
+    setFieldState('c_correo', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? 'Ingresa un correo válido.' : '');
+    setFieldState('c_experiencia', experiencia && Number(experiencia) < 0 ? 'La experiencia no puede ser negativa.' : '');
+    setFieldState('c_vacante', vacante && (!Number.isInteger(Number(vacante)) || Number(vacante) <= 0) ? 'Ingresa un ID de vacante válido.' : '');
+
+    if (photo && !/^image\/.test(photo.type) && photo.type !== 'application/pdf') {
+      Toast.warning('Solo se permiten imágenes o PDF para el adjunto.');
+      return false;
+    }
+
+    return nombre.length >= 2
+      && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)
+      && (!experiencia || Number(experiencia) >= 0)
+      && (!vacante || (Number.isInteger(Number(vacante)) && Number(vacante) > 0));
+  }
+
   function updateFileLabel(input) {
     const label = document.getElementById('fileLabel');
     label.textContent = input.files[0] ? input.files[0].name : 'Adjuntar foto o CV (opcional)';
   }
 
   async function submitCandidate() {
+    if (!validateCandidateForm()) {
+      Toast.error('Corrige los campos marcados para continuar.');
+      return;
+    }
+
+    const btn = document.querySelector('#candidateForm .submit-btn');
     const data = new FormData();
     data.append('nombre',            document.getElementById('c_nombre').value);
     data.append('correo',            document.getElementById('c_correo').value);
@@ -90,22 +142,36 @@
     if (photo) data.append('photo', photo);
 
     try {
+      btn.disabled = true;
+      btn.classList.add('loading');
+      const originalText = btn.textContent;
+      btn.textContent = 'Enviando...';
+
       const res  = await fetch('/api/candidatos', { method: 'POST', body: data });
       const json = await res.json();
       if (res.ok) {
         const fb = document.getElementById('feedback');
         fb.textContent = 'Postulación enviada correctamente. ¡Gracias por tu interés!';
         fb.style.display = 'block';
+        Toast.success('Postulación enviada correctamente.');
         document.getElementById('candidateForm').reset();
         document.getElementById('fileLabel').textContent = 'Adjuntar foto o CV (opcional)';
       } else {
-        alert(json.error || 'Error al enviar');
+        Toast.error(json.error || 'Error al enviar');
       }
     } catch (err) {
       console.error(err);
-      alert('Problema de red');
+      Toast.error('Problema de red');
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      btn.textContent = 'Enviar postulación';
     }
   }
+
+  ['c_nombre', 'c_correo', 'c_experiencia', 'c_vacante'].forEach((fieldId) => {
+    document.getElementById(fieldId).addEventListener('input', validateCandidateForm);
+  });
   </script>
 </body>
 </html>

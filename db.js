@@ -21,6 +21,14 @@ async function ensureSchema() {
   if (!row) {
     const schema = fs.readFileSync(schemaPath, 'utf8');
     await db.exec(schema);
+    return;
+  }
+
+  // Lightweight migrations for existing databases.
+  const columns = await db.all("PRAGMA table_info('candidato')");
+  const hasPhotoPath = columns.some((col) => col.name === 'photo_path');
+  if (!hasPhotoPath) {
+    await db.exec('ALTER TABLE candidato ADD COLUMN photo_path TEXT');
   }
 }
 
