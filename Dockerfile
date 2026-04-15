@@ -1,22 +1,22 @@
-# Use Node 20 on Alpine because sqlite3 6.x requires Node >=20.17
+# Usar Node 20 en Alpine porque sqlite3 6.x requiere Node >=20.17
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies first so Docker can cache this layer when package files don't change.
-# npm ci is currently failing in Docker on this dependency tree, while npm install resolves it correctly.
+# Instalar dependencias primero para que Docker pueda cachear esta capa cuando no cambien los archivos de paquetes.
+# Actualmente npm ci falla en Docker con este árbol de dependencias, mientras que npm install lo resuelve correctamente.
 COPY package*.json ./
 RUN npm install
 
-# Copy app sources
+# Copiar fuentes de la aplicación
 COPY . .
 
-# Copy entrypoint helper script
+# Copiar script auxiliar de inicio
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
 	&& chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose the port the Express app listens on
+# Exponer el puerto donde escucha la app de Express
 EXPOSE 3000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

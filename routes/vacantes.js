@@ -23,7 +23,7 @@ async function getUserScope(userId) {
   return rows[0] || null;
 }
 
-// list available specialty areas for vacancy creation dropdown
+// Listar áreas de especialidad disponibles para el selector de creación de vacantes
 router.get('/areas-especialidad', async (req, res) => {
   try {
     const [rows] = await db.pool.query(
@@ -39,7 +39,7 @@ router.get('/areas-especialidad', async (req, res) => {
   }
 });
 
-// list vacantes with optional search
+// Listar vacantes con búsqueda opcional
 router.get('/', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// create vacante
+// Crear vacante
 router.post('/', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -106,7 +106,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// candidates of a vacante
+// Candidatos de una vacante
 router.get('/:id/candidatos', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);

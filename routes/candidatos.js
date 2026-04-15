@@ -1,8 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { saveBuffer } = require('../services/objectStorage');
 
 const router = express.Router();
 
@@ -11,25 +10,8 @@ function requireAuth(req, res, next) {
   res.status(401).json({ error: 'Not authorized' });
 }
 
-const uploadsDir = path.join(__dirname, '../public/uploads');
-fs.mkdirSync(uploadsDir, { recursive: true });
-
-// configure multer to store in public/uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // keep original name with timestamp prefix to avoid collisions
-    const safeOriginalName = String(file.originalname || 'file')
-      .replace(/[^a-zA-Z0-9._-]/g, '_')
-      .slice(0, 120);
-    const unique = Date.now() + '-' + safeOriginalName;
-    cb(null, unique);
-  }
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024
   },
@@ -42,13 +24,7 @@ const upload = multer({
   }
 });
 
-// stub for future CV parsing
-function parseCv(cvPath) {
-  // placeholder - in the future use OCR/parse logic
-  return {};
-}
-
-// create or update candidate and optional postulacion
+// Crear o actualizar candidato y postulación opcional
 router.post('/', upload.single('photo'), async (req, res) => {
   try {
     const nombre = String(req.body.nombre || '').trim();
@@ -77,12 +53,21 @@ router.post('/', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid vacante_id' });
     }
 
-    // check existing candidate
+    const storedAsset = req.file
+      ? await saveBuffer({
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype,
+        folder: 'candidate-assets',
+        originalName: req.file.originalname,
+        filenamePrefix: 'candidate'
+      })
+      : null;
+
     const [existing] = await db.pool.query('SELECT * FROM candidato WHERE correo = ?', [correo]);
     let candidatoId;
     if (existing.length) {
       candidatoId = existing[0].id;
-      // update missing fields
+      // Actualizar campos faltantes
       await db.pool.query(
         `UPDATE candidato SET nombre = ?, telefono = ?, area_especialidad = ?, experiencia_anos = ?, photo_path = ?
          WHERE id = ?`,
@@ -90,11 +75,11 @@ router.post('/', upload.single('photo'), async (req, res) => {
          telefono || existing[0].telefono,
          area_especialidad.slice(0, 120) || existing[0].area_especialidad,
          experiencia === null ? existing[0].experiencia_anos : Math.trunc(experiencia),
-         req.file ? '/uploads/' + req.file.filename : existing[0].photo_path,
+         storedAsset ? storedAsset.publicPath : existing[0].photo_path,
          candidatoId]
       );
     } else {
-      const photoPath = req.file ? '/uploads/' + req.file.filename : null;
+      const photoPath = storedAsset ? storedAsset.publicPath : null;
       const [result] = await db.pool.query(
         `INSERT INTO candidato (nombre, correo, telefono, area_especialidad, experiencia_anos, photo_path)
          VALUES (?, ?, ?, ?, ?, ?)`,
@@ -102,7 +87,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
       );
       candidatoId = result.insertId;
     }
-    // create postulacion if vacante_id provided
+    // Crear postulación si se proporciona vacante_id
     if (vacanteId) {
       try {
         await db.pool.query(
@@ -110,7 +95,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
           [vacanteId, candidatoId]
         );
       } catch (err) {
-        if (err.code !== 'SQLITE_CONSTRAINT' && err.code !== 'ER_DUP_ENTRY') {
+        if (err.code !== 'SQLITE_CONSTRAINT' && err.code !== 'ER_DUP_ENTRY' && err.code !== '23505') {
           throw err;
         }
       }
@@ -122,7 +107,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 });
 
-// get candidate by id (protected)
+// Obtener candidato por id (protegido)
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const id = req.params.id;

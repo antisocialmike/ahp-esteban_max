@@ -1,12 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const multer = require('multer');
 const { randomBytes } = require('crypto');
 
-// generate a session secret at runtime if none provided in .env
+// Genera un secreto de sesión en tiempo de ejecución si no existe en .env
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.startsWith('replace')) {
   const secret = randomBytes(48).toString('hex');
   console.warn('No valid SESSION_SECRET found; generated temporary secret for this process.');
@@ -18,7 +17,10 @@ const authRoutes = require('./routes/auth');
 const vacantesRoutes = require('./routes/vacantes');
 const postulacionesRoutes = require('./routes/postulaciones');
 const candidatosRoutes = require('./routes/candidatos');
+const { getDbBackend } = require('./db');
+const { createSessionStore, getSessionStoreBackend } = require('./services/sessionStore');
 const { sendApplicationReceivedEmail } = require('./services/emailNotifications');
+const { getStorageBackend, saveBuffer } = require('./services/objectStorage');
 
 const app = express();
 
@@ -36,21 +38,14 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// simple request logger for debugging
+// Registro simple de peticiones para depuración
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// session configuration
-const sessionDbDir = process.env.SESSION_DB_DIR || path.join(__dirname, 'data');
-const sessionDbFile = process.env.SESSION_DB_FILE || 'sessions.sqlite';
-const sessionStore = new SQLiteStore({
-  db: sessionDbFile,
-  dir: sessionDbDir,
-  concurrentDB: true,
-  table: 'sessions'
-});
+// Configuración de sesión
+const { store: sessionStore } = createSessionStore();
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
@@ -100,7 +95,7 @@ function requireCsrf(req, res, next) {
 
 app.use(requireCsrf);
 
-// static files with explicit UTF-8 charset for text assets
+// Archivos estáticos con charset UTF-8 explícito para recursos de texto
 app.use(
   express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, filePath) => {
@@ -116,7 +111,7 @@ app.use(
   })
 );
 
-// Upload in memory only; nothing is written to disk.
+// Carga solo en memoria; no se escribe nada en disco.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -260,6 +255,14 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
   }
 
   try {
+    const storedDocument = await saveBuffer({
+      buffer: req.file.buffer,
+      contentType: req.file.mimetype,
+      folder: 'cv-uploads',
+      originalName: req.file.originalname,
+      filenamePrefix: 'cv'
+    });
+
     const n8nPayload = await forwardPdfToN8n(req.file);
     const extracted = n8nPayload.extracted || {};
     const areaEspecialidad = String(extracted.area_especialidad || '').trim();
@@ -288,6 +291,8 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
       storedInDb,
       hasMatchingOpenVacancies,
       openVacanciesCount,
+      storageBackend: storedDocument.backend,
+      documentPath: storedDocument.publicPath,
       extracted,
       candidatoId
     });
@@ -311,10 +316,32 @@ app.use((err, req, res, next) => {
 app.get('/api/health/db', async (req, res) => {
   try {
     await db.pool.query('SELECT 1 AS ok');
-    res.json({ dbConnected: true });
+    res.json({ dbConnected: true, backend: getDbBackend() });
   } catch (err) {
     console.error('DB healthcheck failed:', err.message);
-    res.status(503).json({ dbConnected: false, error: 'Database not reachable' });
+    res.status(503).json({ dbConnected: false, backend: getDbBackend(), error: 'Database not reachable' });
+  }
+});
+
+app.get('/api/health/ready', async (req, res) => {
+  try {
+    await db.pool.query('SELECT 1 AS ok');
+    res.json({
+      ok: true,
+      dbConnected: true,
+      dbBackend: getDbBackend(),
+      sessionBackend: getSessionStoreBackend(),
+      storageBackend: getStorageBackend()
+    });
+  } catch (err) {
+    console.error('Readiness healthcheck failed:', err.message);
+    res.status(503).json({
+      ok: false,
+      dbConnected: false,
+      dbBackend: getDbBackend(),
+      sessionBackend: getSessionStoreBackend(),
+      storageBackend: getStorageBackend()
+    });
   }
 });
 
@@ -322,7 +349,7 @@ app.get('/api/auth/csrf-token', (req, res) => {
   res.json({ csrfToken: req.session.csrfToken });
 });
 
-// Public recommendations endpoint used by CV upload flow.
+// Endpoint público de recomendaciones usado por el flujo de carga de CV.
 app.get('/api/public/vacantes/recomendadas', async (req, res) => {
   try {
     const candidatoId = Number(req.query.candidato_id) || 0;
@@ -335,7 +362,7 @@ app.get('/api/public/vacantes/recomendadas', async (req, res) => {
   }
 });
 
-// Public application endpoint from recommendation modal.
+// Endpoint público de postulación desde el modal de recomendaciones.
 app.post('/api/public/postulaciones', async (req, res) => {
   try {
     const candidatoId = Number(req.body.candidato_id);
@@ -388,7 +415,7 @@ app.post('/api/public/postulaciones', async (req, res) => {
 
       return res.json({ ok: true, alreadyApplied: false, postulacionId: insertResult.insertId });
     } catch (err) {
-      if (err.code === 'ER_DUP_ENTRY' || err.code === 'SQLITE_CONSTRAINT') {
+      if (err.code === 'ER_DUP_ENTRY' || err.code === 'SQLITE_CONSTRAINT' || err.code === '23505') {
         return res.json({ ok: true, alreadyApplied: true });
       }
       throw err;
@@ -399,7 +426,7 @@ app.post('/api/public/postulaciones', async (req, res) => {
   }
 });
 
-// authorization middleware
+// Middleware de autorización
 function requireAuth(req, res, next) {
   if (req.session && req.session.userId) {
     return next();
@@ -407,19 +434,19 @@ function requireAuth(req, res, next) {
   res.status(401).json({ error: 'Not authorized' });
 }
 
-// protect dashboard HTML
+// Protege el HTML del dashboard
 app.get('/dashboard.html', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// mount API routes
+// Monta rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/vacantes', requireAuth, vacantesRoutes);
 app.use('/api/postulaciones', requireAuth, postulacionesRoutes);
-app.use('/api/candidatos', candidatosRoutes); // POST open, GET protected inside
+app.use('/api/candidatos', candidatosRoutes); // POST abierto, GET protegido internamente
 
-// fallback for other static routes (login, create-account, index)
-// they are served by express.static
+// Ruta de respaldo para otras rutas estáticas (login, create-account, index)
+// Son servidas por express.static
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });

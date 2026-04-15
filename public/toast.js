@@ -1,10 +1,10 @@
 /**
- * Toast Notification System
- * Provides non-blocking feedback to users
+ * Sistema de notificaciones emergentes (toast)
+ * Proporciona retroalimentación no bloqueante a los usuarios
  */
 
 (function() {
-  // Ensure container exists
+  // Asegura que el contenedor exista
   function getToastContainer() {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -16,7 +16,7 @@
     return container;
   }
 
-  // Create and show toast
+  // Crear y mostrar notificacion
   window.Toast = {
     show: function(message, type = 'info', duration = 4000) {
       const container = getToastContainer();

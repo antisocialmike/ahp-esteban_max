@@ -1,4 +1,4 @@
-// script for dashboard interactions
+// Codigo para interacciones del dashboard
 
 let selectedVacante = null;
 let selectedCandidate = null;
@@ -6,7 +6,7 @@ let areasEspecialidad = [];
 let currentCandidates = [];
 let csrfToken = '';
 
-// Pagination state
+// Estado de paginación
 let paginationState = {
   vacantesCurrent: 1,
   vacantesTotal: 1,
@@ -62,7 +62,7 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
-// Returns { data, headers } for extracting pagination info
+// Retorna { data, headers } para extraer información de paginación
 async function requestJsonWithHeaders(url, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const nextOptions = { ...options };
@@ -348,13 +348,13 @@ async function openCandidateModal(postulacionId) {
     const rec = currentCandidates.find((row) => row.postulacion_id === postulacionId);
     if (!rec) return;
     selectedCandidate = rec;
-    // fill modal
+    // Llenar modal
     document.getElementById('cvName').innerText = rec.nombre;
     document.getElementById('cvCorreo').innerText = rec.correo;
     document.getElementById('cvTelefono').innerText = 'Teléfono: ' + (rec.telefono || '--');
     document.getElementById('cvArea').innerText = 'Área: ' + (rec.area_especialidad || '--');
     document.getElementById('cvExperiencia').innerText = 'Experiencia: ' + (rec.experiencia_anos || 0) + ' años';
-    // photo
+    // Foto
     const photoDiv = document.querySelector('.cv-photo');
     if (rec.photo_path) {
       photoDiv.style.backgroundImage = `url(${rec.photo_path})`;
@@ -365,10 +365,10 @@ async function openCandidateModal(postulacionId) {
       photoDiv.style.backgroundSize = 'cover';
       photoDiv.style.backgroundPosition = 'center';
     }
-    // interview input preset
+    // Valor inicial del campo de entrevista
     const iv = document.getElementById('interviewInput');
     iv.value = rec.interview_at ? rec.interview_at.replace(' ', 'T') : '';
-    // compute "ya pasó"
+    // Calcular "ya pasó"
     const passedEl = document.getElementById('cvPassed');
     if (rec.interview_at) {
       const dt = new Date(rec.interview_at);
@@ -431,7 +431,7 @@ async function saveInterview() {
   }
 }
 
-// pendientes view
+// Vista de pendientes
 async function openPendientes() {
   try {
     const list = await requestJson('/api/postulaciones/pending');
@@ -520,7 +520,7 @@ function updatePaginationControls() {
   const current = isVacantes ? state.vacantesCurrent : state.candidatosCurrent;
   const total = isVacantes ? state.vacantesTotal : state.candidatosTotal;
 
-  // Show/hide pagination
+  // Mostrar/ocultar paginación
   if (total <= 1) {
     container.style.display = 'none';
     return;
@@ -528,7 +528,7 @@ function updatePaginationControls() {
 
   container.style.display = 'flex';
 
-  // Update button states
+  // Actualizar estados de botones
   const prevBtn = container.querySelector('.pagination-prev');
   const nextBtn = container.querySelector('.pagination-next');
   const pageInfo = container.querySelector('.pagination-info');
@@ -707,8 +707,8 @@ async function submitCreateVacante() {
 }
 
 /* ============================================================
-   DARK MODE TOGGLE
-   ============================================================ */
+  INTERRUPTOR DE MODO OSCURO
+  ============================================================ */
 
 function initTheme() {
   const saved = localStorage.getItem('ahp-theme') || 'light';
@@ -732,8 +732,8 @@ function updateThemeIcon(theme) {
 }
 
 /* ============================================================
-   STATS BAR
-   ============================================================ */
+  BARRA DE ESTADÍSTICAS
+  ============================================================ */
 
 async function loadStats() {
   try {
@@ -765,7 +765,7 @@ async function loadStats() {
   }
 }
 
-// initial load
+// Carga inicial
 initTheme();
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 if (themeToggleBtn) {
@@ -776,7 +776,7 @@ loadStats();
 loadVacantes();
 ensureCsrfToken().catch(() => null);
 
-// close modals when clicking outside
+// Cerrar modales al hacer clic fuera
 window.onclick = function(e) {
   const menu = document.getElementById('menu');
   const profile = document.querySelector('.profile');

@@ -1,10 +1,10 @@
 ﻿/* ============================================================
-  AHP - Corporate Design System
+  AHP - Sistema de Diseno Corporativo
   ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* ---------- TOKENS — LIGHT (default) ---------- */
+/* ---------- TOKENS — CLARO (por defecto) ---------- */
 :root {
   --c-bg:          #f1f5f9;
   --c-surface:     #ffffff;
@@ -33,7 +33,7 @@
   color-scheme: light;
 }
 
-/* ---------- TOKENS — DARK ---------- */
+/* ---------- TOKENS — OSCURO ---------- */
 [data-theme="dark"] {
   --c-bg:          #0b1120;
   --c-surface:     #141e30;
@@ -58,14 +58,14 @@
   color-scheme: dark;
 }
 
-/* ---------- RESET ---------- */
+/* ---------- REINICIO ---------- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Smooth theme transitions */
+/* Transiciones suaves de tema */
 body,
 .header,
 .card,
@@ -92,17 +92,17 @@ body {
 }
 
 /* ============================================================
-   WELCOME / LANDING
-   ============================================================ */
+  BIENVENIDA / PORTADA
+  ============================================================ */
 
-/* Full-screen dark split layout */
+/* Diseno dividido oscuro a pantalla completa */
 .welcome-page {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
 
-/* Left: branding panel */
+/* Izquierda: panel de marca */
 .welcome-brand {
   background: var(--c-gradient);
   display: flex;
@@ -115,7 +115,7 @@ body {
   overflow: hidden;
 }
 
-/* decorative circles */
+/* circulos decorativos */
 .welcome-brand::before,
 .welcome-brand::after {
   content: '';
@@ -175,7 +175,7 @@ body {
   text-transform: uppercase;
 }
 
-/* Right: action panel */
+/* Derecha: panel de accion */
 .welcome-action {
   background: var(--c-surface);
   display: flex;
@@ -201,7 +201,7 @@ body {
   line-height: 1.6;
 }
 
-/* Upload / drop zone */
+/* Zona de carga / arrastre */
 .drop-zone {
   width: 100%;
   max-width: 420px;
@@ -234,7 +234,7 @@ body {
   color: var(--c-text-3);
 }
 
-/* Welcome CTA buttons */
+/* Botones CTA de bienvenida */
 .welcome-cta {
   display: flex;
   flex-direction: column;
@@ -244,8 +244,8 @@ body {
 }
 
 /* ============================================================
-   BUTTONS
-   ============================================================ */
+  BOTONES
+  ============================================================ */
 
 .btn {
   display: inline-flex;
@@ -315,13 +315,13 @@ body {
   border-radius: var(--radius-md);
 }
 
-/* legacy aliases */
+/* alias heredados */
 .primary-btn  { composes: btn btn-primary from global; background: var(--c-accent); color: #fff; padding: 11px 24px; border-radius: var(--radius-sm); border: none; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,.30); transition: background .18s, box-shadow .18s; display: inline-flex; align-items: center; justify-content: center; }
 .primary-btn:hover { background: var(--c-accent-h); }
 .secondary-btn { background: var(--c-surface); color: var(--c-text-2); padding: 11px 24px; border-radius: var(--radius-sm); border: 1.5px solid var(--c-border); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: border-color .18s, color .18s; display: inline-flex; align-items: center; justify-content: center; }
 .secondary-btn:hover { border-color: var(--c-accent); color: var(--c-accent); }
 
-/* debug button top-right */
+/* boton de depuracion arriba a la derecha */
 #debugConnectionBtn {
   position: fixed;
   top: 14px;
@@ -334,8 +334,8 @@ body {
 #debugConnectionBtn:hover { opacity: 1; }
 
 /* ============================================================
-   AUTH LAYOUT  (Login / Create Account)
-   ============================================================ */
+  DISENO DE AUTENTICACION  (Iniciar sesion / Crear cuenta)
+  ============================================================ */
 
 .login-container {
   width: 100%;
@@ -344,7 +344,7 @@ body {
   grid-template-columns: 1fr 1fr;
 }
 
-/* ---- Left panel (form) ---- */
+/* ---- Panel izquierdo (formulario) ---- */
 .left-panel {
   display: flex;
   flex-direction: column;
@@ -371,7 +371,7 @@ body {
   margin-bottom: 32px;
 }
 
-/* ---- Right panel (gradient) ---- */
+/* ---- Panel derecho (degradado) ---- */
 .right-panel {
   background: var(--c-gradient);
   display: flex;
@@ -445,7 +445,7 @@ body {
   flex-shrink: 0;
 }
 
-/* legacy pill badges  */
+/* insignias heredadas tipo pastilla  */
 .maps-card {
   background: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.20);
@@ -469,8 +469,8 @@ body {
 }
 
 /* ============================================================
-   FORM INPUTS
-   ============================================================ */
+  CAMPOS DE FORMULARIO
+  ============================================================ */
 
 .input-group {
   position: relative;
@@ -512,7 +512,7 @@ body {
   pointer-events: none;
 }
 
-/* Row (phone code) */
+/* Fila (codigo telefonico) */
 .row {
   display: flex;
   gap: 10px;
@@ -529,12 +529,12 @@ body {
   padding-left: 14px;
 }
 
-/* input without icon */
+/* campo sin icono */
 .input-group input.no-icon {
   padding-left: 14px;
 }
 
-/* Submit / form button */
+/* Boton de envio / formulario */
 .submit-btn {
   width: 100%;
   background: var(--c-accent);
@@ -555,7 +555,7 @@ body {
   box-shadow: 0 4px 14px rgba(37,99,235,.36);
 }
 
-/* Loading state for submit button */
+/* Estado de carga para el botón de envío */
 .submit-btn:disabled {
   background: var(--c-accent);
   opacity: 0.7;
@@ -575,7 +575,7 @@ body {
   vertical-align: middle;
 }
 
-/* Links below form */
+/* Enlaces debajo del formulario */
 .create-account,
 .back-link {
   font-size: 13px;
@@ -596,7 +596,7 @@ body {
   margin-bottom: 20px;
 }
 
-/* Success message */
+/* Mensaje de éxito */
 .success-message {
   background: #ecfdf5;
   color: #065f46;
@@ -608,14 +608,14 @@ body {
   display: none;
 }
 
-/* Login form column */
+/* Columna del formulario de inicio de sesión */
 .login-form {
   display: flex;
   flex-direction: column;
 }
 
 /* ============================================================
-  DASHBOARD - HEADER
+  DASHBOARD - ENCABEZADO
   ============================================================ */
 
 body.dash-body {
@@ -654,7 +654,7 @@ body.dash-body {
   color: var(--c-text-2);
 }
 
-/* Profile dropdown */
+/* Menu desplegable de perfil */
 .profile {
   position: relative;
   display: flex;
@@ -719,7 +719,7 @@ body.dash-body {
 .side-panel.show { display: flex; }
 
 /* ============================================================
-  DASHBOARD - MAIN
+  DASHBOARD - PRINCIPAL
   ============================================================ */
 
 .main {
@@ -739,7 +739,7 @@ body.dash-body {
   margin-bottom: 28px;
 }
 
-/* Filter / search bar */
+/* Barra de filtro / busqueda */
 .filter-box {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -808,7 +808,7 @@ body.dash-body {
   color: var(--c-accent);
 }
 
-/* Vacantes grid */
+/* Cuadricula de vacantes */
 .vacantes-container {
   margin-top: 24px;
   display: grid;
@@ -816,7 +816,7 @@ body.dash-body {
   gap: 20px;
 }
 
-/* Vacancy card */
+/* Tarjeta de vacante */
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -976,7 +976,7 @@ body.dash-body {
 }
 
 /* ============================================================
-  CANDIDATES - PROSPECTS
+  CANDIDATOS - PROSPECTOS
   ============================================================ */
 
 .prospects-section {
@@ -1051,8 +1051,8 @@ body.dash-body {
 }
 
 /* ============================================================
-   MODALS
-   ============================================================ */
+  MODALES
+  ============================================================ */
 
 .modal {
   position: fixed;
@@ -1103,7 +1103,7 @@ body.dash-body {
 }
 .close-btn:hover { color: var(--c-text); }
 
-/* CV modal layout */
+/* Diseno del modal de CV */
 .cv-layout {
   display: flex;
   gap: 28px;
@@ -1156,7 +1156,7 @@ body.dash-body {
 }
 .cv-info select:focus { border-color: var(--c-accent); }
 
-/* Interview section */
+/* Seccion de entrevista */
 #interviewSection {
   display: flex;
   flex-direction: column;
@@ -1187,7 +1187,7 @@ body.dash-body {
 }
 .interview-btn:hover { background: var(--c-navy); }
 
-/* Action buttons in modal */
+/* Botones de acción en el modal */
 #actionButtons {
   display: flex;
   gap: 10px;
@@ -1208,7 +1208,7 @@ body.dash-body {
 .status-btn:first-child { background: var(--c-success); color: #fff; }
 .status-btn:last-child  { background: var(--c-danger);  color: #fff; }
 
-/* Vanates pendientes / create form */
+/* Vacantes pendientes / formulario de creación */
 .vacante-create-content { width: min(480px, 100%); }
 
 .vacante-form-field {
@@ -1249,7 +1249,7 @@ body.dash-body {
   gap: 10px;
 }
 
-/* Info modal */
+/* Modal de información */
 .info-modal-content { width: min(480px, 100%); }
 
 .info-modal-message {
@@ -1263,7 +1263,7 @@ body.dash-body {
   border: 1px solid var(--c-border);
 }
 
-/* Pending list */
+/* Lista de pendientes */
 .pending-item {
   background: var(--c-bg);
   border: 1px solid var(--c-border);
@@ -1274,7 +1274,7 @@ body.dash-body {
   color: var(--c-text-2);
 }
 
-/* Empty state */
+/* Estado vacío */
 .empty-candidates-state {
   grid-column: 1 / -1;
   background: var(--c-surface);
@@ -1298,8 +1298,8 @@ body.dash-body {
 .entrevistas-modal-content { width: min(580px, 100%); }
 
 /* ============================================================
-   LOADING OVERLAY
-   ============================================================ */
+  CAPA DE CARGA
+  ============================================================ */
 
 .loading-overlay {
   position: fixed;
@@ -1343,8 +1343,8 @@ body.dash-body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ============================================================
-   VACANTES RECOMMENDATION MODAL (upload page)
-   ============================================================ */
+  MODAL DE RECOMENDACION DE VACANTES (pagina de carga)
+  ============================================================ */
 
 .vacantes-modal {
   position: fixed;
@@ -1452,8 +1452,8 @@ body.dash-body {
 }
 
 /* ============================================================
-   CANDIDATE APPLICATION PAGE
-   ============================================================ */
+  PAGINA DE POSTULACION DE CANDIDATO
+  ============================================================ */
 
 .candidate-page {
   min-height: 100vh;
@@ -1516,8 +1516,8 @@ body.dash-body {
 .file-label input[type="file"] { display: none; }
 
 /* ============================================================
-   RESPONSIVE
-   ============================================================ */
+  DISENO RESPONSIVO
+  ============================================================ */
 
 @media (max-width: 1024px) {
   .welcome-brand,
@@ -1694,8 +1694,8 @@ body.dash-body {
 }
 
 /* ============================================================
-   UTILITIES
-   ============================================================ */
+  UTILIDADES
+  ============================================================ */
 
 .text-muted    { color: var(--c-text-2); }
 .text-accent   { color: var(--c-accent); }
@@ -1706,14 +1706,14 @@ body.dash-body {
 .mt-16         { margin-top: 16px; }
 
 /* ============================================================
-   SMALL LEGACY LOGO (welcome page top-left)
-   ============================================================ */
-.logo           { /* kept for dashboard header img wrapper */ }
+  LOGO PEQUENO HEREDADO (pagina de bienvenida arriba a la izquierda)
+  ============================================================ */
+.logo           { /* se mantiene para el contenedor de imagen del encabezado del dashboard */ }
 .small-logo     { width: 52px; }
 
 /* ============================================================
-   SPLASH SCREEN
-   ============================================================ */
+  PANTALLA DE CARGA INICIAL
+  ============================================================ */
 
 #ahp-splash {
   position: fixed;
@@ -1791,10 +1791,10 @@ body.dash-body {
 }
 
 /* ============================================================
-   PAGE TRANSITIONS
-   ============================================================ */
+  TRANSICIONES DE PAGINA
+  ============================================================ */
 
-/* Page fade-in on enter */
+/* Desvanecimiento de entrada de pagina */
 body {
   animation: pageIn .35s ease both;
 }
@@ -1804,7 +1804,7 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Fade-out overlay applied before navigation */
+/* Capa de salida aplicada antes de navegar */
 #page-out-overlay {
   position: fixed;
   inset: 0;
@@ -1821,8 +1821,8 @@ body {
 }
 
 /* ============================================================
-   THEME TOGGLE BUTTON
-   ============================================================ */
+  BOTON DE CAMBIO DE TEMA
+  ============================================================ */
 
 .theme-toggle {
   width: 36px;
@@ -1846,8 +1846,8 @@ body {
 }
 
 /* ============================================================
-   STATS BAR
-   ============================================================ */
+  BARRA DE ESTADISTICAS
+  ============================================================ */
 
 .stats-bar {
   display: grid;
@@ -1912,8 +1912,8 @@ body {
 }
 
 /* ============================================================
-   PAGE HEADING ROW  (title + action button on same line)
-   ============================================================ */
+  FILA DE TITULO DE PAGINA  (titulo + boton de accion en la misma linea)
+  ============================================================ */
 
 .page-heading-row {
   display: flex;
@@ -1929,8 +1929,8 @@ body {
 }
 
 /* ============================================================
-   EMPTY STATE (vacantes / any list)
-   ============================================================ */
+  ESTADO VACIO (vacantes / cualquier lista)
+  ============================================================ */
 
 .empty-state {
   background: var(--c-surface);
@@ -1971,8 +1971,8 @@ body {
 }
 
 /* ============================================================
-   RESPONSIVE — stats bar collapses to 1 col on mobile
-   ============================================================ */
+  RESPONSIVO — la barra de estadisticas se reduce a 1 columna en movil
+  ============================================================ */
 @media (max-width: 640px) {
   .stats-bar {
     grid-template-columns: 1fr;
@@ -2076,8 +2076,8 @@ body {
 }
 
 /* ============================================================
-   PAGINATION CONTROLS
-   ============================================================ */
+  CONTROLES DE PAGINACION
+  ============================================================ */
 
 .pagination-controls {
   background: var(--c-surface);
@@ -2122,8 +2122,8 @@ body {
 }
 
 /* ============================================================
-   TOAST NOTIFICATIONS
-   ============================================================ */
+  NOTIFICACIONES TOAST
+  ============================================================ */
 
 .toast-container {
   position: fixed;
@@ -2200,8 +2200,8 @@ body {
 .toast.hide { animation: toastSlideOut .3s ease forwards; }
 
 /* ============================================================
-   ENHANCED INPUT VALIDATION
-   ============================================================ */
+  VALIDACION MEJORADA DE CAMPOS
+  ============================================================ */
 
 .input-group {
   position: relative;
@@ -2242,20 +2242,20 @@ body {
   color: var(--c-success);
 }
 
-/* Input focus management */
+/* Gestion de foco en campos */
 .input-group input:focus::placeholder {
   color: transparent;
 }
 
-/* Better placeholder text */
+/* Mejor texto de marcador de posicion */
 .input-group input::placeholder {
   color: var(--c-text-3);
   font-weight: 500;
 }
 
 /* ============================================================
-   ENHANCED BUTTON STATES
-   ============================================================ */
+  ESTADOS MEJORADOS DE BOTONES
+  ============================================================ */
 
 .vacante-select-btn:disabled,
 .vacante-select-btn.is-disabled {
@@ -2284,15 +2284,15 @@ body {
 }
 
 /* ============================================================
-   KEYBOARD NAVIGATION VISIBILITY
-   ============================================================ */
+  VISIBILIDAD DE NAVEGACION CON TECLADO
+  ============================================================ */
 
 *:focus-visible {
   outline: 2px solid var(--c-accent);
   outline-offset: 2px;
 }
 
-/* Reduce motion for users who prefer it */
+/* Reducir movimiento para usuarios que lo prefieren */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -2302,8 +2302,8 @@ body {
 }
 
 /* ============================================================
-   IMPROVED MOBILE TOUCH TARGETS
-   ============================================================ */
+  OBJETIVOS TACTILES MEJORADOS EN MOVIL
+  ============================================================ */
 
 @media (max-width: 768px) {
   .submit-btn,
@@ -2341,8 +2341,8 @@ body {
 }
 
 /* ============================================================
-   BETTER FOCUS INDICATORS
-   ============================================================ */
+  MEJORES INDICADORES DE FOCO
+  ============================================================ */
 
 button:focus-visible,
 input:focus-visible,

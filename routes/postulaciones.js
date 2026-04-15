@@ -31,7 +31,7 @@ async function getUserScope(userId) {
   return rows[0] || null;
 }
 
-// pendientes (all postulaciones with status PENDIENTE)
+// Pendientes (todas las postulaciones con estatus PENDIENTE)
 router.get('/pending', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -75,7 +75,7 @@ router.get('/pending', async (req, res) => {
   }
 });
 
-// entrevistas pendientes/proximas
+// Entrevistas pendientes/próximas
 router.get('/interviews-pending', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -121,7 +121,7 @@ router.get('/interviews-pending', async (req, res) => {
   }
 });
 
-// change status (ACEPTADO/RECHAZADO/PENDIENTE)
+// Cambiar estatus (ACEPTADO/RECHAZADO/PENDIENTE)
 router.patch('/:id/status', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -181,7 +181,7 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-// schedule interview
+// Programar entrevista
 router.patch('/:id/interview', async (req, res) => {
   try {
     const scope = await getUserScope(req.session.userId);
@@ -222,7 +222,7 @@ router.patch('/:id/interview', async (req, res) => {
       return res.status(404).json({ error: 'Postulación no encontrada' });
     }
 
-    // allow null to clear
+    // Permite null para limpiar
     await db.pool.query('UPDATE postulacion SET interview_at = ? WHERE id = ?', [interview_at || null, id]);
 
     if (interview_at) {

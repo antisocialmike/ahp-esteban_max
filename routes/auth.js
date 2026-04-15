@@ -59,7 +59,7 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128)
 });
 
-// register new RH user
+// Registrar nuevo usuario de RH
 router.post('/register', async (req, res) => {
   let conn;
   try {
@@ -115,7 +115,7 @@ router.post('/register', async (req, res) => {
     );
 
     await conn.commit();
-    // create session
+    // Crear sesión
     req.session.userId = result.insertId;
     req.session.nombre = safeNombre;
     req.session.save((err) => {
@@ -136,7 +136,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// login
+// Iniciar sesión
 router.post('/login', async (req, res) => {
   try {
     const parsed = loginSchema.safeParse(req.body || {});
@@ -179,7 +179,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// logout
+// Cerrar sesión
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) {
