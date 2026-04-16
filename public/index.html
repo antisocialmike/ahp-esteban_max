@@ -53,10 +53,22 @@
     <!-- RIGHT: Actions -->
     <div class="welcome-action">
 
+      <div class="welcome-topbar">
+        <button class="theme-toggle welcome-theme-btn" id="themeToggleBtn" title="Cambiar tema" aria-label="Cambiar tema">
+          <i data-lucide="moon" style="width:16px;height:16px;" id="themeIcon"></i>
+        </button>
+      </div>
+
       <div style="text-align:center;">
         <h2>Descubre vacantes para ti</h2>
         <p style="margin-top:8px;">Sube tu CV en PDF y nuestro sistema detectar&aacute; autom&aacute;ticamente tu perfil y las mejores vacantes disponibles.</p>
       </div>
+
+      <ul class="welcome-highlights" aria-label="Beneficios de AHP">
+        <li>Matching inteligente</li>
+        <li>Respuesta r&aacute;pida</li>
+        <li>Proceso claro</li>
+      </ul>
 
       <!-- Drop zone -->
       <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Zona de carga de CV">
@@ -107,6 +119,31 @@ const vacantesListEl     = document.getElementById('vacantesList');
 const vacantesSubtitleEl = document.getElementById('vacantesSubtitle');
 const loadingOverlay     = document.getElementById('loadingOverlay');
 const loadingText        = document.getElementById('loadingText');
+const themeToggleBtn     = document.getElementById('themeToggleBtn');
+const themeIcon          = document.getElementById('themeIcon');
+
+function applyThemeIcon() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (!themeIcon) return;
+  themeIcon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    lucide.createIcons();
+  }
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ahp-theme', next);
+  applyThemeIcon();
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', toggleTheme);
+}
+
+applyThemeIcon();
 
 ['dragenter','dragover','dragleave','drop'].forEach(function(ev) {
   dropZone.addEventListener(ev, preventDefaults, false);
@@ -147,6 +184,13 @@ dropZone.addEventListener('click', function() {
   input.accept = 'application/pdf';
   input.addEventListener('change', function(){ handleFiles(input.files); });
   input.click();
+});
+
+dropZone.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    dropZone.click();
+  }
 });
 
 dropZone.addEventListener('drop', handleDrop, false);

@@ -9,6 +9,10 @@
 (function () {
   'use strict';
 
+  var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var pageTransitionMs = prefersReducedMotion ? 0 : 300;
+  var splashDelayMs = prefersReducedMotion ? 0 : 1400;
+
   /* ── 1. Insertar la capa de desvanecimiento de salida ───── */
   var overlay = document.createElement('div');
   overlay.id  = 'page-out-overlay';
@@ -19,7 +23,7 @@
     overlay.classList.add('fading');
     setTimeout(function () {
       window.location.href = url;
-    }, 300);
+    }, pageTransitionMs);
   };
 
   /* ── 3. Pantalla de bienvenida (solo index.html) ────────── */
@@ -33,7 +37,7 @@
         splash.addEventListener('transitionend', function () {
           splash.remove();
         }, { once: true });
-      }, 1800);
+      }, splashDelayMs);
     }
   });
 
