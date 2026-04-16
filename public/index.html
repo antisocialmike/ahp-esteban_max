@@ -26,10 +26,6 @@
     </div>
   </div>
 
-  <button id="debugConnectionBtn" class="secondary-btn" title="Test DB connection">
-    Test DB
-  </button>
-
   <!-- ======== MAIN LAYOUT ======== -->
   <div class="welcome-page">
 
@@ -112,7 +108,6 @@
 lucide.createIcons();
 
 const dropZone           = document.getElementById('drop-zone');
-const debugConnectionBtn = document.getElementById('debugConnectionBtn');
 const vacantesModal      = document.getElementById('vacantesModal');
 const closeVacantesModalBtn = document.getElementById('closeVacantesModal');
 const vacantesListEl     = document.getElementById('vacantesList');
@@ -198,11 +193,6 @@ closeVacantesModalBtn.addEventListener('click', closeVacantesModal);
 vacantesModal.addEventListener('click', function(e) {
   if (e.target === vacantesModal) closeVacantesModal();
 });
-debugConnectionBtn.addEventListener('click', async function() {
-  var dbConnected = await checkDbConnection();
-  showInfo('Estado de base de datos', dbConnected ? 'Conexión a SQLite: OK' : 'Conexión a SQLite: FALLÓ');
-});
-
 function handleDrop(e) {
   handleFiles(e.dataTransfer.files);
 }

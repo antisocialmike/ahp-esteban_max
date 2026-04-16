@@ -23,7 +23,6 @@
       <p class="cc-sub">Completa tu información para postularte a una vacante académica</p>
 
       <p id="feedback" class="success-message"></p>
-      <p id="statusMessage" class="small-text" style="display:none;margin-bottom:10px;"></p>
 
       <form id="candidateForm" onsubmit="event.preventDefault(); submitCandidate();">
 
@@ -100,17 +99,11 @@
     const correo = document.getElementById('c_correo').value.trim();
     const experiencia = document.getElementById('c_experiencia').value;
     const vacante = document.getElementById('c_vacante').value;
-    const photo = document.getElementById('c_photo').files[0];
 
     setFieldState('c_nombre', nombre.length < 2 ? 'Ingresa tu nombre completo.' : '');
     setFieldState('c_correo', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? 'Ingresa un correo válido.' : '');
     setFieldState('c_experiencia', experiencia && Number(experiencia) < 0 ? 'La experiencia no puede ser negativa.' : '');
     setFieldState('c_vacante', vacante && (!Number.isInteger(Number(vacante)) || Number(vacante) <= 0) ? 'Ingresa un ID de vacante válido.' : '');
-
-    if (photo && !/^image\/.test(photo.type) && photo.type !== 'application/pdf') {
-      Toast.warning('Solo se permiten imágenes o PDF para el adjunto.');
-      return false;
-    }
 
     return nombre.length >= 2
       && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)

@@ -38,17 +38,11 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Registro simple de peticiones para depuración
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
-
 // Configuración de sesión
 const { store: sessionStore } = createSessionStore();
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'keyboard cat',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
@@ -266,7 +260,6 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
     const n8nPayload = await forwardPdfToN8n(req.file);
     const extracted = n8nPayload.extracted || {};
     const areaEspecialidad = String(extracted.area_especialidad || '').trim();
-    console.log('[UPLOAD] JSON recibido desde n8n:', JSON.stringify(extracted));
 
     const recomendacionesPrevias = await getRecommendedVacancies(0, areaEspecialidad);
     const openVacanciesCount = recomendacionesPrevias.vacantes.length;
@@ -278,11 +271,7 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
     if (hasMatchingOpenVacancies) {
       candidatoId = await upsertCandidateFromExtraction(extracted);
       storedInDb = Boolean(candidatoId);
-    } else {
-      console.log('[UPLOAD] No hay vacantes abiertas para el area detectada; no se guarda candidato.');
     }
-
-    console.log('[UPLOAD] DB result:', storedInDb ? `OK (candidato_id=${candidatoId})` : 'Sin insercion por datos incompletos');
 
     res.json({
       ok: true,
