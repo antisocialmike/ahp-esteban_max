@@ -1,0 +1,16 @@
+FROM jenkins/jenkins:lts-jdk21
+
+USER root
+
+# Tools required by the Jenkinsfile stages:
+# - git for checkout
+# - Node.js 20 + npm for dependency install and tests
+# - Docker CLI to build images from Jenkins
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl git gnupg docker-cli \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+USER jenkins
