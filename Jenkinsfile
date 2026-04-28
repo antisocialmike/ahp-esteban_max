@@ -74,7 +74,10 @@ pipeline {
         
         stage('Push to Registry') {
             when {
-                branch 'main'
+                anyOf {
+                    branch 'main'
+                    branch 'feat/rama_Esteban_Max'
+                }
                 // Descomenta cuando tengas DockerHub configurado:
                 // expression { env.BUILD_STATUS == 'SUCCESS' }
             }
@@ -91,7 +94,10 @@ pipeline {
         
         stage('Deploy to Local') {
             when {
-                branch 'main'
+                anyOf {
+                    branch 'main'
+                    branch 'feat/rama_Esteban_Max'
+                }
             }
             steps {
                 echo '🚀 Desplegando en local...'
