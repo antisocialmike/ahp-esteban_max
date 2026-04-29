@@ -94,23 +94,38 @@ pipeline {
         
         stage('Deploy to Local') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'feat/rama_Esteban_Max'
-                }
+                branch 'main'
             }
             steps {
                 echo '🚀 Desplegando en local...'
                 sh '''
-                    if command -v docker-compose &> /dev/null; then
-                        echo "docker-compose encontrado"
-                        # docker-compose down
-                        # docker-compose up -d
-                        echo "Despliegue simular (descomenta en producción)"
-                    else
-                        echo "docker-compose no encontrado"
-                    fi
+                    export DEPLOY_CONTAINER=academic-hiring-platform-app
+                    echo "Stopping existing container if present..."
+                    docker rm -f $DEPLOY_CONTAINER 2>/dev/null || true
+
+                    echo "Running new image..."
+                    docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:latest
                 '''
+            }
+            post {
+                success {
+                    echo '✅ Deploy exitoso, guardando imagen estable...'
+                    sh '''
+                        docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:stable
+                    '''
+                }
+                failure {
+                    echo '⚠️ Deploy fallido, intentando rollback a la versión estable...'
+                    sh '''
+                        if docker image inspect ${DOCKER_IMAGE}:stable > /dev/null 2>&1; then
+                            docker rm -f $DEPLOY_CONTAINER 2>/dev/null || true
+                            docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:stable
+                            echo "Rollback completado a ${DOCKER_IMAGE}:stable"
+                        else
+                            echo "No se encontró una imagen estable para rollback."
+                        fi
+                    '''
+                }
             }
         }
     }
