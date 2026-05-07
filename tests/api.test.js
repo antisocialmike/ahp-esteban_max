@@ -38,7 +38,7 @@ test('CSRF protects authenticated mutations and allows valid token', async () =>
   assert.equal(registerRes.status, 200);
   assert.equal(registerRes.body.success, true);
 
-
+  const missingTokenRes = await agent
     .post('/api/vacantes')
     .send({ titulo: 'Vacante sin CSRF', area: 'Tecnologia e Ingenieria' });
 

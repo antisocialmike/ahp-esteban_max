@@ -1,21 +1,4 @@
 services:
-  jenkins:
-    build:
-      context: .
-      dockerfile: Dockerfile.jenkins
-    container_name: jenkins
-    user: "0:0"
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      JENKINS_OPTS: "--httpPort=8080"
-      JAVA_OPTS: "-Xmx2g -Xms1g"
-    restart: unless-stopped
-
   app:
     build: .
     ports:
@@ -114,4 +97,3 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-  jenkins_home:
