@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-#hola esteban
+
 PORT=${PORT:-3000}
 LOCKFILE_HASH_FILE=node_modules/.package-lock.sha256
 
