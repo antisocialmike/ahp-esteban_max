@@ -1,0 +1,34 @@
+jenkins:
+  systemMessage: "AHP - Academic Hiring Platform CI/CD"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+jobs:
+  - script: |
+      pipelineJob('academic-hiring-platform-pipeline') {
+        description('Pipeline CI/CD para Academic Hiring Platform')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/antisocialmike/ahp-esteban_max')
+                }
+                branch('*/feat/rama_Esteban_Max_pruebas')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+        triggers {
+          scm('H/5 * * * *')
+        }
+      }

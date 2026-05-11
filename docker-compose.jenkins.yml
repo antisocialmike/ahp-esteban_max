@@ -1,7 +1,6 @@
 version: '3.9'
 
 services:
-  # Servicio Jenkins
   jenkins:
     build:
       context: .
@@ -17,72 +16,9 @@ services:
     environment:
       JENKINS_OPTS: "--httpPort=8080"
       JAVA_OPTS: "-Xmx2g -Xms1g"
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD}
     restart: unless-stopped
-    networks:
-      - ahp-network
-
-  # Tu aplicación sigue igual
-  app:
-    build: .
-    ports:
-      - '3000:3000'
-    environment:
-      DB_CLIENT: ${DB_CLIENT:-sqlite}
-      DATABASE_URL: ${DATABASE_URL:-}
-      DB_SSL: ${DB_SSL:-false}
-      NODE_ENV: production
-      COOKIE_SECURE: 'false'
-      PORT: 3000
-      DB_FILE: /app/data/ahp.sqlite
-      SESSION_DB_FILE: sessions.sqlite
-      SESSION_DB_DIR: /app/data
-      SESSION_SECRET: ${SESSION_SECRET:-replace-me-with-secret}
-      REDIS_URL: ${REDIS_URL:-}
-      REDIS_PREFIX: ${REDIS_PREFIX:-ahp:sess:}
-      S3_BUCKET: ${S3_BUCKET:-}
-      S3_ENDPOINT: ${S3_ENDPOINT:-}
-      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
-      AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL:-}
-      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
-    volumes:
-      - ./:/app:cached
-      - ./data:/app/data
-      - /app/node_modules
-    restart: unless-stopped
-    networks:
-      - ahp-network
-    depends_on:
-      - postgres
-
-  # PostgreSQL para producción
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ahp
-      POSTGRES_USER: ahp
-      POSTGRES_PASSWORD: ahp_dev_password
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ahp -d ahp']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - ahp-network
 
 volumes:
   jenkins_home:
-    external: true
-    name: jenkins_home
-  postgres_data:
-
-networks:
-  ahp-network:
-    driver: bridge

@@ -1,5 +1,9 @@
 FROM jenkins/jenkins:lts-jdk21
 
+# Skip the interactive setup wizard on first boot
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/casc.yaml
+
 USER root
 
 # Tools required by the Jenkinsfile stages:
@@ -14,3 +18,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 USER jenkins
+
+# Install plugins (including JCasC) from the list in the repo
+COPY jenkins/plugins.txt /usr/share/jenkins/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/plugins.txt
+
+# Copy the JCasC config so Jenkins auto-configures on every fresh boot
+COPY jenkins/casc.yaml /usr/share/jenkins/casc.yaml

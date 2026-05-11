@@ -1,4 +1,4 @@
-Ôªø<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -157,7 +157,7 @@ function showInfo(title, message) {
   var box = document.createElement('div');
   box.className = 'vacante-empty';
   var strong = document.createElement('strong');
-  strong.textContent = title || 'Informaci√≥n';
+  strong.textContent = title || 'InformaciÛn';
   var br = document.createElement('br');
   var span = document.createElement('span');
   span.textContent = message || '';
@@ -226,12 +226,12 @@ async function handleFiles(files) {
   if (!files || files.length === 0) return;
   var file = files[0];
   if (file.type !== 'application/pdf') {
-    showInfo('Archivo inv√°lido', 'Solo se permiten archivos PDF');
+    showInfo('Archivo inv·lido', 'Solo se permiten archivos PDF');
     return;
   }
   var dbConnected = await checkDbConnection();
   if (!dbConnected) {
-    showInfo('Servicio no disponible', 'No se puede subir el archivo porque no hay conexi√≥n con la base de datos.');
+    showInfo('Servicio no disponible', 'No se puede subir el archivo porque no hay conexiÛn con la base de datos.');
     return;
   }
   uploadFile(file);
