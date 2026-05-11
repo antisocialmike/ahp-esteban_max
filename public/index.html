@@ -128,7 +128,85 @@ function applyThemeIcon() {
   }
 }
 
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  var next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ahp-theme', next);
+  applyThemeIcon();
+}
 
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', toggleTheme);
+}
+
+applyThemeIcon();
+
+['dragenter','dragover','dragleave','drop'].forEach(function(ev) {
+  dropZone.addEventListener(ev, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+function showInfo(title, message) {
+  vacantesListEl.innerHTML = '';
+  vacantesSubtitleEl.textContent = '';
+  var box = document.createElement('div');
+  box.className = 'vacante-empty';
+  var strong = document.createElement('strong');
+  strong.textContent = title || 'Información';
+  var br = document.createElement('br');
+  var span = document.createElement('span');
+  span.textContent = message || '';
+  box.appendChild(strong);
+  box.appendChild(br);
+  box.appendChild(span);
+  vacantesListEl.appendChild(box);
+  openVacantesModal();
+}
+
+['dragenter','dragover'].forEach(function(ev) {
+  dropZone.addEventListener(ev, function(){ dropZone.classList.add('dragover'); }, false);
+});
+['dragleave','drop'].forEach(function(ev) {
+  dropZone.addEventListener(ev, function(){ dropZone.classList.remove('dragover'); }, false);
+});
+
+dropZone.addEventListener('click', function() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf';
+  input.addEventListener('change', function(){ handleFiles(input.files); });
+  input.click();
+});
+
+dropZone.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    dropZone.click();
+  }
+});
+
+dropZone.addEventListener('drop', handleDrop, false);
+closeVacantesModalBtn.addEventListener('click', closeVacantesModal);
+vacantesModal.addEventListener('click', function(e) {
+  if (e.target === vacantesModal) closeVacantesModal();
+});
+function handleDrop(e) {
+  handleFiles(e.dataTransfer.files);
+}
+
+function showLoading(message) {
+  loadingText.textContent = message || 'Procesando CV...';
+  loadingOverlay.classList.add('show');
+  loadingOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function hideLoading() {
+  loadingOverlay.classList.remove('show');
   loadingOverlay.setAttribute('aria-hidden', 'true');
 }
 
