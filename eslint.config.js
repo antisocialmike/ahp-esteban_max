@@ -1,8 +1,8 @@
-module.exports = [
+export default [
     {
         rules: {
-            "no-unused-vars": "warn",
-            "no-undef": "warn"
+            "no-unused-vars": "error",
+            "no-undef": "error"
         }
     }
 ];
