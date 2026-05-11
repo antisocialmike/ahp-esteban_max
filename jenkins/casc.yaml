@@ -30,5 +30,6 @@ jobs:
         }
         triggers {
           scm('H/5 * * * *')
+          githubPush()
         }
       }
