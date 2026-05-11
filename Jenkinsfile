@@ -31,18 +31,13 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 echo '📚 Instalando dependencias...'
-                sh '''
-                    node --version
-                    npm --version
-                    npm install
-                '''
+                sh 'npm install'
             }
         }
         
         stage('Run Tests') {
             steps {
                 echo '✅ Ejecutando tests...'
-                // Sin "|| true", si el test falla, el pipeline se detiene aquí.
                 sh 'npm test'
             }
         }
@@ -50,7 +45,6 @@ pipeline {
         stage('Code Quality Check') {
             steps {
                 echo '🔍 Verificando calidad de código con ESLint...'
-                // Ejecución directa: si hay errores, el pipeline truena aquí.
                 sh './node_modules/.bin/eslint .'
             }
         }
@@ -64,16 +58,28 @@ pipeline {
                 '''
             }
         }
-        
-        stage('Push to Registry') {
+
+        // --- ESTA ES LA ETAPA NUEVA ---
+        stage('Promote to Main') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'feat/rama_Esteban_Max'
-                }
+                // Solo se ejecuta si estás trabajando en tu rama de Esteban
+                branch 'feat/rama_Esteban_Max'
             }
             steps {
-                echo "📤 Imagen lista para registro: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                echo '🚀 Código verificado. Sincronizando cambios con MAIN...'
+                sh '''
+                    # Configuramos usuario local para el commit de merge
+                    git config user.email "jenkins@necting.com"
+                    git config user.name "Jenkins CI"
+                    
+                    # Traemos main y mezclamos
+                    git checkout main || git checkout -b main
+                    git pull origin main || true
+                    git merge origin/feat/rama_Esteban_Max --no-ff -m "Merge automático Build #${env.BUILD_NUMBER} [Jenkins]"
+                    
+                    # Subimos a GitHub
+                    git push origin main
+                '''
             }
         }
         
@@ -95,7 +101,7 @@ pipeline {
                     sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:stable'
                 }
                 failure {
-                    echo '⚠️ Deploy fallido, ejecutando rollback a la última versión estable...'
+                    echo '⚠️ Deploy fallido, ejecutando rollback...'
                     sh '''
                         export DEPLOY_CONTAINER=academic-hiring-platform-app
                         if docker image inspect ${DOCKER_IMAGE}:stable > /dev/null 2>&1; then
@@ -103,7 +109,7 @@ pipeline {
                             docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:stable
                             echo "Rollback completado con éxito."
                         else
-                            echo "ERROR: No se encontró imagen estable para realizar rollback."
+                            echo "ERROR: No hay imagen estable para rollback."
                             exit 1
                         fi
                     '''
@@ -117,13 +123,11 @@ pipeline {
             echo '🧹 Limpiando espacio de trabajo...'
             cleanWs()
         }
-        
         success {
-            echo '✨ Pipeline completado exitosamente. ¡Código de calidad!'
+            echo '✨ Pipeline exitoso. El código ya está en Main y la imagen Docker creada.'
         }
-        
         failure {
-            echo '❌ El pipeline falló. Revisa los logs de ESLint o de los Tests.'
+            echo '❌ El pipeline falló. El código NO se subió a Main.'
         }
     }
 }
