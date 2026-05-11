@@ -42,22 +42,16 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo '✅ Ejecutando tests...'
-                // Se eliminó el "|| true" para que el pipeline falle si el test no pasa
+                // Sin "|| true", si el test falla, el pipeline se detiene aquí.
                 sh 'npm test'
             }
         }
         
         stage('Code Quality Check') {
             steps {
-                echo '🔍 Verificando calidad de código...'
-                sh '''
-                    if [ -f "node_modules/.bin/eslint" ]; then
-                        ./node_modules/.bin/eslint .
-                    else
-                        echo "Linter no encontrado, asegúrate de tener eslint instalado."
-                        exit 1
-                    fi
-                '''
+                echo '🔍 Verificando calidad de código con ESLint...'
+                // Ejecución directa: si hay errores, el pipeline truena aquí.
+                sh './node_modules/.bin/eslint .'
             }
         }
         
@@ -79,8 +73,7 @@ pipeline {
                 }
             }
             steps {
-                echo '📤 Preparando push a registro...'
-                sh 'echo "Imagen lista: ${DOCKER_IMAGE}:${DOCKER_TAG}"'
+                echo "📤 Imagen lista para registro: ${DOCKER_IMAGE}:${DOCKER_TAG}"
             }
         }
         
@@ -98,11 +91,11 @@ pipeline {
             }
             post {
                 success {
-                    echo '✅ Deploy exitoso, actualizando tag estable...'
+                    echo '✅ Deploy exitoso, guardando imagen estable...'
                     sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:stable'
                 }
                 failure {
-                    echo '⚠️ Deploy fallido, ejecutando rollback...'
+                    echo '⚠️ Deploy fallido, ejecutando rollback a la última versión estable...'
                     sh '''
                         export DEPLOY_CONTAINER=academic-hiring-platform-app
                         if docker image inspect ${DOCKER_IMAGE}:stable > /dev/null 2>&1; then
@@ -110,7 +103,7 @@ pipeline {
                             docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:stable
                             echo "Rollback completado con éxito."
                         else
-                            echo "Error crítico: No hay imagen estable para rollback."
+                            echo "ERROR: No se encontró imagen estable para realizar rollback."
                             exit 1
                         fi
                     '''
@@ -126,11 +119,11 @@ pipeline {
         }
         
         success {
-            echo '✨ ¡Felicidades! Todo el pipeline pasó correctamente.'
+            echo '✨ Pipeline completado exitosamente. ¡Código de calidad!'
         }
         
         failure {
-            echo '❌ El pipeline falló. Revisa los logs arriba para ver qué comando tronó.'
+            echo '❌ El pipeline falló. Revisa los logs de ESLint o de los Tests.'
         }
     }
 }
