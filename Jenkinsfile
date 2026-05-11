@@ -42,9 +42,8 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo '✅ Ejecutando tests...'
-                sh '''
-                    npm test || true
-                '''
+                // Se eliminó el "|| true" para que el pipeline falle si el test no pasa
+                sh 'npm test'
             }
         }
         
@@ -52,10 +51,11 @@ pipeline {
             steps {
                 echo '🔍 Verificando calidad de código...'
                 sh '''
-                    if [ -d "node_modules/.bin" ]; then
-                        echo "Verificación completada"
+                    if [ -f "node_modules/.bin/eslint" ]; then
+                        ./node_modules/.bin/eslint .
                     else
-                        echo "No hay linters configurados"
+                        echo "Linter no encontrado, asegúrate de tener eslint instalado."
+                        exit 1
                     fi
                 '''
             }
@@ -67,7 +67,6 @@ pipeline {
                 sh '''
                     docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                     docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                    docker images | grep ${DOCKER_IMAGE}
                 '''
             }
         }
@@ -78,17 +77,10 @@ pipeline {
                     branch 'main'
                     branch 'feat/rama_Esteban_Max'
                 }
-                // Descomenta cuando tengas DockerHub configurado:
-                // expression { env.BUILD_STATUS == 'SUCCESS' }
             }
             steps {
-                echo '📤 Subiendo imagen a registro (cuando esté configurado)...'
-                sh '''
-                    echo "Imagen lista para push: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    # Descomenta cuando tengas credenciales de DockerHub:
-                    # echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                    # docker push $DOCKER_USERNAME/${DOCKER_IMAGE}:${DOCKER_TAG}
-                '''
+                echo '📤 Preparando push a registro...'
+                sh 'echo "Imagen lista: ${DOCKER_IMAGE}:${DOCKER_TAG}"'
             }
         }
         
@@ -100,29 +92,26 @@ pipeline {
                 echo '🚀 Desplegando en local...'
                 sh '''
                     export DEPLOY_CONTAINER=academic-hiring-platform-app
-                    echo "Stopping existing container if present..."
                     docker rm -f $DEPLOY_CONTAINER 2>/dev/null || true
-
-                    echo "Running new image..."
                     docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:latest
                 '''
             }
             post {
                 success {
-                    echo '✅ Deploy exitoso, guardando imagen estable...'
-                    sh '''
-                        docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:stable
-                    '''
+                    echo '✅ Deploy exitoso, actualizando tag estable...'
+                    sh 'docker tag ${DOCKER_IMAGE}:latest ${DOCKER_IMAGE}:stable'
                 }
                 failure {
-                    echo '⚠️ Deploy fallido, intentando rollback a la versión estable...'
+                    echo '⚠️ Deploy fallido, ejecutando rollback...'
                     sh '''
+                        export DEPLOY_CONTAINER=academic-hiring-platform-app
                         if docker image inspect ${DOCKER_IMAGE}:stable > /dev/null 2>&1; then
                             docker rm -f $DEPLOY_CONTAINER 2>/dev/null || true
                             docker run -d --name $DEPLOY_CONTAINER -p 3000:3000 ${DOCKER_IMAGE}:stable
-                            echo "Rollback completado a ${DOCKER_IMAGE}:stable"
+                            echo "Rollback completado con éxito."
                         else
-                            echo "No se encontró una imagen estable para rollback."
+                            echo "Error crítico: No hay imagen estable para rollback."
+                            exit 1
                         fi
                     '''
                 }
@@ -132,19 +121,16 @@ pipeline {
     
     post {
         always {
-            echo '🧹 Limpiando...'
-            sh '''
-                rm -f test-results.xml 2>/dev/null || true
-            '''
+            echo '🧹 Limpiando espacio de trabajo...'
             cleanWs()
         }
         
         success {
-            echo '✨ Pipeline completado exitosamente'
+            echo '✨ ¡Felicidades! Todo el pipeline pasó correctamente.'
         }
         
         failure {
-            echo '❌ Pipeline falló'
+            echo '❌ El pipeline falló. Revisa los logs arriba para ver qué comando tronó.'
         }
     }
 }
